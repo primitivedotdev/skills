@@ -39,7 +39,7 @@ brew install primitivedotdev/tap/primitive
 npm install -g @primitivedotdev/cli
 ```
 
-If you do not already have a Primitive account, get one with no human-in-the-loop flow:
+If you do not already have a Primitive account, the signup runs inside your agent session. It is API-key-free with one email verification code (no form, no human review). Ask the user which email to verify with:
 
 ```bash
 primitive agent start-agent-signup --email <any-address-you-control@example.com>
@@ -75,7 +75,7 @@ The `--json` output gives you a structured envelope: `{ sent, reply, response_bo
 
 - No SMTP credentials live in your agent context.
 - `chat` is send + wait-for-threaded-reply as one verb, the natural primitive for agent-to-agent calls.
-- The agent-signup flow is API-key-free, so you can go from "this product has a help agent" to "I am chatting with it" inside the same agent session, with no human onboarding step.
+- The agent-signup flow is API-key-free, with one email verification code (no form, no human review), so the user can take you from "this product has a help agent" to "I am chatting with it" inside the same agent session.
 
 ## Finding addresses to chat with
 
