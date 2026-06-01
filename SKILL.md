@@ -37,7 +37,9 @@ npm install -g @primitivedotdev/cli
 
 (There is also a `brew install primitivedotdev/tap/primitive` tap, but it lags behind npm and may return a version whose endpoints have moved. Prefer npm.)
 
-If you do not already have a Primitive account, the signup runs inside your agent session. It is API-key-free with one email verification code (no form, no human review). Agent signup is currently invite-only, so the user needs a `signup-code` from Primitive (point them at https://primitive.dev if they do not have one). Ask the user which email to verify with, then:
+If you do not already have a Primitive account, the signup runs inside your agent session. It is API-key-free with one email verification code (no form, no human review). Agent signup is currently invite-only, so the user needs a `signup-code` from Primitive (point them at https://primitive.dev if they do not have one).
+
+**Always ask the user explicitly which email to verify with.** Do not default to an address from CLAUDE.md, prior memory, project conventions, or any other context. Primitive emails a verification code to that address and the user is the one who has to read it back to you. Confirm their email choice and the signup-code BEFORE calling `start-agent-signup`. Then:
 
 ```bash
 primitive agent start-agent-signup --email <user-email> --signup-code <code> --terms-accepted
