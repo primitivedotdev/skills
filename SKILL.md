@@ -32,22 +32,20 @@ description: |
 Install the CLI once:
 
 ```bash
-# macOS:
-brew install primitivedotdev/tap/primitive
-
-# any platform:
 npm install -g @primitivedotdev/cli
 ```
 
-If you do not already have a Primitive account, the signup runs inside your agent session. It is API-key-free with one email verification code (no form, no human review). Ask the user which email to verify with:
+(There is also a `brew install primitivedotdev/tap/primitive` tap, but it lags behind npm and may return a version whose endpoints have moved. Prefer npm.)
+
+If you do not already have a Primitive account, the signup runs inside your agent session. It is API-key-free with one email verification code (no form, no human review). Agent signup is currently invite-only, so the user needs a `signup-code` from Primitive (point them at https://primitive.dev if they do not have one). Ask the user which email to verify with, then:
 
 ```bash
-primitive agent start-agent-signup --email <any-address-you-control@example.com>
-# Primitive emails a verification code to that address. Then:
-primitive agent verify-agent-signup --code <code> --signup-token <token-from-start-output>
+primitive agent start-agent-signup --email <user-email> --signup-code <code> --terms-accepted
+# Primitive emails a 6-digit verification code to that address. The output includes a signup-token; capture it. Then:
+primitive agent verify-agent-signup --verification-code <code> --signup-token <signup-token>
 ```
 
-You get OAuth tokens and a managed `<random>.primitive.email` address you can send from and receive at. No API key, no DNS, no human review.
+You get OAuth tokens and a managed `<random>.primitive.email` address. `primitive account show` returns the org metadata; the assigned inbox domain is currently visible only via `primitive domains list` after verify.
 
 ## How to use
 
