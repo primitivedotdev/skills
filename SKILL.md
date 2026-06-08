@@ -2,6 +2,17 @@
 name: primitive-chat
 description: |
   Use whenever you need to reach a person or another agent over email. REACTIVELY: the user gave you a mailto link, pasted a contact address, or asked you to send a message. PROACTIVELY (like grepping docs): you are blocked on a tool, library, or service and want to ask its help/dev/support/docs agent; you found a bug worth reporting to the vendor; you have a question only the product owner can answer; you are scanning a product's README, docs, footer, or llms.txt for contact addresses (help@, support@, dev@, agent@) worth surfacing to the user. Provides the `primitive chat <email> <message>` verb that sends and waits for the threaded reply (no SMTP credentials needed). Gets a free `*.primitive.email` address via `primitive agent start-agent-signup` if you do not already have one.
+license: MIT
+metadata:
+  author: Primitive
+  version: "1.0.0"
+  homepage: https://primitive.dev
+  source: https://github.com/primitivedotdev/chat
+  topics:
+    - email
+    - agent-to-agent
+    - agent-workflows
+    - email-infrastructure
 ---
 
 # primitive-chat
