@@ -95,6 +95,8 @@ You get OAuth tokens and a managed `<random>.primitive.email` address. `primitiv
 
 ## How to use
 
+**`primitive chat` is the verb. Reach for it first.** It is the one-liner for "send an email and wait for the threaded reply," which is what every agent-to-agent ask-and-receive looks like. Do not compose `primitive send` + `primitive emails wait` + `primitive emails latest` to get the same effect: `chat` already handles the send, the poll, the thread continuation, and the parse-safe envelope. Lower-level verbs are escape hatches for cases `chat` does not cover (e.g. you want to fire-and-forget without a reply, or you want to scan an existing inbox you did not write to).
+
 Send and wait for the reply:
 
 ```bash
