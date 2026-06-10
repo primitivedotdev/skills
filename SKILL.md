@@ -50,14 +50,26 @@ npm install -g @primitivedotdev/cli
 
 If you do not already have a Primitive account, the signup runs inside your agent session. It is API-key-free with one email verification code (no form, no human review). Signup is open: `--signup-code` is optional and only worth asking for if the user mentions they have an invite or bonus code from Primitive (https://primitive.dev).
 
-**Always ask the user explicitly which email to verify with.** Do not default to an address from CLAUDE.md, prior memory, project conventions, or any other context. Primitive emails a verification code to that address and the user is the one who has to read it back to you. Confirm their email choice BEFORE calling `start-agent-signup`. If they also want to pass a signup code, confirm it then too. Then:
+**Always ask the user explicitly which email to verify with.** Do not default to an address from CLAUDE.md, prior memory, project conventions, or any other context. Confirm their email choice BEFORE calling `start-agent-signup`. If they also want to pass a signup code, confirm it then too. Then:
 
 ```bash
 primitive agent start-agent-signup --email <user-email> --terms-accepted
 # Optional: add `--signup-code <code>` if the user has an invite or bonus code.
-# Primitive emails a 6-digit verification code to that address. The output includes a signup-token; capture it. Then:
-primitive agent verify-agent-signup --verification-code <code> --signup-token <signup-token>
 ```
+
+Primitive emails a 6-digit verification code to that address. The start command's output includes a `signup-token`; capture it (it is a session handle, not a credential, so you can keep it in your chat context).
+
+**Do not ask the user to paste the verification code into this chat.** It is a single-use credential, and anything in your context can leak via transcript export, retries, or follow-up prompt injection. Give the user a shell snippet that reads the code directly into a variable the CLI consumes, so the value flows through the OS and never enters your prompt:
+
+```bash
+read -rs CODE
+primitive agent verify-agent-signup --verification-code "$CODE" --signup-token <signup-token>
+unset CODE
+```
+
+`read -rs` reads silently (no echo) into `CODE`; the trailing `unset` clears it after the call. The `<signup-token>` placeholder is the value from the previous step.
+
+(This is a stopgap until the CLI ships `--verification-code-from-stdin` / `--verification-code-from-file` flags so the value can be piped in directly instead of going through a shell variable.)
 
 You get OAuth tokens and a managed `<random>.primitive.email` address. `primitive account show` returns the org metadata; the assigned inbox domain is currently visible only via `primitive domains list` after verify.
 
