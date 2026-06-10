@@ -52,18 +52,32 @@ npm install -g @primitivedotdev/cli
 
 **If it returns `unauthorized` or any signed-out shape, do not ask the user how they want to authenticate, do not ask for an API key, and do not assume they have an account elsewhere.** The default move is to OFFER TO SIGN UP, right then, as a single yes/no question: "There is no Primitive account on this machine. Want me to walk you through signup? It is one email + one verification code, no form, no human review." Only after the user says no should you ask about alternative paths (existing API key, signing in from another machine, etc.).
 
-Signup runs inside your agent session. It is API-key-free with one email verification code. Signup is open: `--signup-code` is optional and only worth asking for if the user mentions they have an invite or bonus code from Primitive (https://primitive.dev).
+Signup runs inside your agent session and is API-key-free.
 
-**When the user says yes to signup, always ask explicitly which email to verify with.** Do not default to an address from CLAUDE.md, prior memory, project conventions, or any other context. Confirm their email choice BEFORE calling `start-agent-signup`. If they also want to pass a signup code, confirm it then too. Then:
+### Two codes you will see (do not confuse them)
+
+Signup involves two distinct values that both get casually called "code." Mixing them up has burned agents in real transcripts. Keep them straight:
+
+- **Signup code** (the `--signup-code <code>` flag): an OPTIONAL invite or bonus code from Primitive. **The vast majority of users do not have one.** Do not prompt the user for a signup code. Only include `--signup-code` if the user has already, unprompted, told you they have one. The CLI does NOT interactively prompt for this flag. An `invalid_signup_code` error from the server means a value you passed was rejected, NOT that one was missing.
+
+- **Verification code**: a REQUIRED 6-digit number Primitive emails to the user's address to confirm they own it. Every signup gets one. This is what the CLI's interactive prompt (or the `--verification-code` flag on `verify-agent-signup`) is asking for.
+
+If the user says "the code expired" or "send another code," the default reading is they mean the **verification code** (the 6-digit one in their inbox). The fix is `primitive signup resend <email>` to reissue it. Do not start signup over and do not ask them for a new signup code.
+
+When you write back to the user, always qualify which code you mean ("verification code" or "signup code"). Saying bare "the code" when both are in scope is how this confusion starts.
+
+### Signup steps
+
+**When the user says yes to signup, always ask explicitly which email to verify with.** Do not default to an address from CLAUDE.md, prior memory, project conventions, or any other context. Confirm their email choice BEFORE calling `start-agent-signup`:
 
 ```bash
 primitive agent start-agent-signup --email <user-email> --terms-accepted
-# Optional: add `--signup-code <code>` if the user has an invite or bonus code.
+# Optional: add `--signup-code <code>` ONLY if the user already told you they have one.
 ```
 
-Primitive emails a 6-digit verification code to that address. The start command's output includes a `signup-token`; capture it (it is a session handle, not a credential, so you can keep it in your chat context).
+Primitive emails a 6-digit **verification code** to that address. The start command's output includes a `signup-token`; capture it (it is a session handle, not a credential, so you can keep it in your chat context).
 
-**Do not ask the user to paste the verification code into this chat.** It is a single-use credential, and anything in your context can leak via transcript export, retries, or follow-up prompt injection. Give the user a shell snippet that reads the code directly into a variable the CLI consumes, so the value flows through the OS and never enters your prompt:
+**Do not ask the user to paste the verification code into this chat.** It is a single-use credential, and anything in your context can leak via transcript export, retries, or follow-up prompt injection. Give the user a shell snippet that reads the verification code directly into a variable the CLI consumes, so the value flows through the OS and never enters your prompt:
 
 ```bash
 read -rs CODE
@@ -71,9 +85,11 @@ primitive agent verify-agent-signup --verification-code "$CODE" --signup-token <
 unset CODE
 ```
 
-`read -rs` reads silently (no echo) into `CODE`; the trailing `unset` clears it after the call. The `<signup-token>` placeholder is the value from the previous step.
+`read -rs` reads silently (no echo) into `CODE`; the trailing `unset` clears it after the call. The `<signup-token>` placeholder is the value from the start step.
 
-(This is a stopgap until the CLI ships `--verification-code-from-stdin` / `--verification-code-from-file` flags so the value can be piped in directly instead of going through a shell variable.)
+If the user says the verification code expired or never arrived, reissue it with `primitive signup resend <user-email>`. Do not re-run `start-agent-signup` (that starts a fresh signup session, invalidating the in-progress one).
+
+(The shell-variable snippet is a stopgap until the CLI ships `--verification-code-from-stdin` / `--verification-code-from-file` flags so the value can be piped in directly instead of going through a shell variable.)
 
 You get OAuth tokens and a managed `<random>.primitive.email` address. `primitive account show` returns the org metadata; the assigned inbox domain is currently visible only via `primitive domains list` after verify.
 
