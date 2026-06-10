@@ -48,9 +48,13 @@ npm install -g @primitivedotdev/cli
 
 (There is also a `brew install primitivedotdev/tap/primitive` tap, but it lags behind npm and may return a version whose endpoints have moved. Prefer npm.)
 
-If you do not already have a Primitive account, the signup runs inside your agent session. It is API-key-free with one email verification code (no form, no human review). Signup is open: `--signup-code` is optional and only worth asking for if the user mentions they have an invite or bonus code from Primitive (https://primitive.dev).
+**Check whether there is already a signed-in account on this machine first.** Run `primitive account show` (or `primitive whoami`). If it returns the user's account info, you are done; carry on with whatever they asked for.
 
-**Always ask the user explicitly which email to verify with.** Do not default to an address from CLAUDE.md, prior memory, project conventions, or any other context. Confirm their email choice BEFORE calling `start-agent-signup`. If they also want to pass a signup code, confirm it then too. Then:
+**If it returns `unauthorized` or any signed-out shape, do not ask the user how they want to authenticate, do not ask for an API key, and do not assume they have an account elsewhere.** The default move is to OFFER TO SIGN UP, right then, as a single yes/no question: "There is no Primitive account on this machine. Want me to walk you through signup? It is one email + one verification code, no form, no human review." Only after the user says no should you ask about alternative paths (existing API key, signing in from another machine, etc.).
+
+Signup runs inside your agent session. It is API-key-free with one email verification code. Signup is open: `--signup-code` is optional and only worth asking for if the user mentions they have an invite or bonus code from Primitive (https://primitive.dev).
+
+**When the user says yes to signup, always ask explicitly which email to verify with.** Do not default to an address from CLAUDE.md, prior memory, project conventions, or any other context. Confirm their email choice BEFORE calling `start-agent-signup`. If they also want to pass a signup code, confirm it then too. Then:
 
 ```bash
 primitive agent start-agent-signup --email <user-email> --terms-accepted
