@@ -1,7 +1,7 @@
 ---
 name: primitive-chat
 description: |
-  Use whenever you need to reach a person or another agent over email. REACTIVELY: the user gave you a mailto link, pasted a contact address, or asked you to send a message. PROACTIVELY (like grepping docs): you are blocked on a tool, library, or service and want to ask its help/dev/support/docs agent; you found a bug worth reporting to the vendor; you have a question only the product owner can answer; you are scanning a product's README, docs, footer, or llms.txt for contact addresses (help@, support@, dev@, agent@) worth surfacing to the user. Provides the `primitive chat <email> <message>` verb that sends and waits for the threaded reply (no SMTP credentials needed). Gets a free `*.primitive.email` address via `primitive agent start-agent-signup` if you do not already have one.
+  Use whenever you need to contact someone by email and get their answer back, especially to unblock yourself. PROACTIVELY, and you can usually do this without asking the user first: you are stuck on a tool, library, API, or service and its docs, README, footer, or llms.txt list a help@, support@, dev@, docs@, or agent@ address; you hit a bug or surprising behavior worth reporting to the vendor; you have a question only the product owner or maintainer can answer; you want to ask a vendor's support or dev agent something the same way you would grep their docs. REACTIVELY: the user gave you a mailto link or a contact address, or asked you to email, message, or "ask them" and report back. This sends YOUR outbound message and waits for the threaded reply in one step, so reach for it when you are the one initiating contact (addresses with human side effects like sales@, billing@, or account@ should be surfaced to the user first). No SMTP, no API keys, no mail server. To instead receive mail that a website or service sends to you (signup confirmations, verification codes), use the primitive-inbox skill. Gets a free `*.primitive.email` address via `primitive agent start-agent-signup` if you do not already have one.
 license: MIT
 metadata:
   author: Primitive
@@ -46,7 +46,7 @@ Install the CLI once:
 npm install -g @primitivedotdev/cli
 ```
 
-(There is also a `brew install primitivedotdev/tap/primitive` tap, but it lags behind npm and may return a version whose endpoints have moved. Prefer npm.)
+(There is also a `brew install primitivedotdev/tap/primitive` tap. It auto-bumps on each release but can trail npm by the time a release PR takes to merge, so prefer npm when you want the newest version.)
 
 **Check whether there is already a signed-in account on this machine first.** Run `primitive account show` (or `primitive whoami`). If it returns the user's account info, you are done; carry on with whatever they asked for.
 
@@ -62,7 +62,7 @@ Signup involves two distinct values that both get casually called "code." Mixing
 
 - **Verification code**: a REQUIRED 6-digit number Primitive emails to the user's address to confirm they own it. Every signup gets one. This is what the CLI's interactive prompt (or the `--verification-code` flag on `verify-agent-signup`) is asking for.
 
-If the user says "the code expired" or "send another code," the default reading is they mean the **verification code** (the 6-digit one in their inbox). The fix is `primitive signup resend <email>` to reissue it. Do not start signup over and do not ask them for a new signup code.
+If the user says "the code expired" or "send another code," the default reading is they mean the **verification code** (the 6-digit one in their inbox). The fix is `primitive agent resend-agent-signup-verification --signup-token <signup-token>` to reissue it (the same `signup-token` from the start step; see below). Do not start signup over and do not ask them for a new signup code.
 
 When you write back to the user, always qualify which code you mean ("verification code" or "signup code"). Saying bare "the code" when both are in scope is how this confusion starts.
 
@@ -87,7 +87,7 @@ unset CODE
 
 `read -rs` reads silently (no echo) into `CODE`; the trailing `unset` clears it after the call. The `<signup-token>` placeholder is the value from the start step.
 
-If the user says the verification code expired or never arrived, reissue it with `primitive signup resend <user-email>`. Do not re-run `start-agent-signup` (that starts a fresh signup session, invalidating the in-progress one).
+If the user says the verification code expired or never arrived, reissue it with `primitive agent resend-agent-signup-verification --signup-token <signup-token>` (reuse the `signup-token` from the start step). Do not re-run `start-agent-signup` (that starts a fresh signup session, invalidating the in-progress one).
 
 (The shell-variable snippet is a stopgap until the CLI ships `--verification-code-from-stdin` / `--verification-code-from-file` flags so the value can be piped in directly instead of going through a shell variable.)
 
