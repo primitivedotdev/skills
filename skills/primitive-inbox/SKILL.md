@@ -39,14 +39,24 @@ Give your agent a real inbox: a managed `*.primitive.email` address that receive
 
 ## Setup
 
-Install the CLI and provision a managed inbox. Signup is API-key-free (one email verification code, no form) but currently invite-only, so the user needs a `signup-code` (point them at https://primitive.dev if they do not have one). **Always ask the user explicitly which email to verify with** first — Primitive emails the code to that address and the user reads it back to you:
+Install the CLI and provision a managed inbox. Signup is API-key-free and self-serve: Primitive emails one 6-digit verification code to an address you choose, with no form and no human review.
 
 ```bash
 npm install -g @primitivedotdev/cli
-primitive agent start-agent-signup --email <user-email> --signup-code <code> --terms-accepted
-# Primitive emails a 6-digit code to that address; the output includes a signup-token. Then:
+```
+
+**Check for an existing account first** with `primitive account show` (or `primitive whoami`). If it returns the user's account info, you are done. If it returns `unauthorized` or a signed-out shape, offer to sign up right then.
+
+**Always ask the user explicitly which email to verify with** before starting. Primitive emails the code to that address and the user reads it back. Do not default to an address from CLAUDE.md, memory, or project context.
+
+```bash
+primitive agent start-agent-signup --email <user-email> --terms-accepted
+# Optional: add `--signup-code <code>` ONLY if the user has already, unprompted, said they have one.
+# Primitive emails a 6-digit verification code; the start output includes a signup-token. Then:
 primitive agent verify-agent-signup --verification-code <code> --signup-token <signup-token>
 ```
+
+**Two codes, do not confuse them.** The **signup code** (`--signup-code`) is an OPTIONAL invite/bonus code that the vast majority of users do not have: never prompt for it, and only pass it if the user volunteers one. The **verification code** is the REQUIRED 6-digit number Primitive emails to confirm the address; every signup gets one. If a code "expired" or needs resending, it is the verification code: `primitive signup resend <user-email>`. For the full signup walkthrough, including entering the verification code without pasting it into the chat, see the **primitive-chat** skill.
 
 You get a managed `<random>.primitive.email` address. Confirm readiness and the exact receive address:
 
