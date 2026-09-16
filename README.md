@@ -11,11 +11,20 @@ npx skills add primitivedotdev/skills
 This registers the skills with every supported agent it finds on your system. To install just one, pass `--skill`:
 
 ```bash
+npx skills add primitivedotdev/skills --skill primitive-connect
 npx skills add primitivedotdev/skills --skill primitive-chat
 npx skills add primitivedotdev/skills --skill primitive-inbox
 ```
 
 ## Skills
+
+### primitive-connect
+
+Connects an agent to its owner's existing Primitive account from the app's copied
+setup instruction. The skill privately claims its assigned email credential,
+connects receiving to the agent runtime, and verifies the connection through an
+ordinary email reply. Includes a dependency-free Node.js helper for scoped mail
+and address-note API calls.
 
 ### primitive-chat
 
@@ -25,7 +34,7 @@ Teaches the `primitive chat <email> <message>` verb: send an email and wait for 
 
 Gives your agent a real, managed `*.primitive.email` address that receives mail, plus the verbs to read it (`primitive emails latest`), wait for it (`primitive emails wait`), and run a hosted Function on every inbound message. Reach for it whenever the agent needs to receive email: a reply, a verification code, an alert, or a throwaway address for a signup.
 
-Both skills share the same signup: API-key-free, with one 6-digit verification code emailed to an address you choose, no form and no human review.
+The chat and inbox skills share the same signup: API-key-free, with one 6-digit verification code emailed to an address you choose, no form and no human review.
 
 ## Why
 
