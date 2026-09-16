@@ -14,11 +14,18 @@ without its fragment. Follow its current contract. The invitation's `#token=`
 fragment is a secret for the claim POST, never a query parameter or part of a GET.
 This connects to the owner's existing account; do not create a separate account.
 
+Before claiming, check for your runtime's documented Primitive connection
+adapter. Prefer it so the credential, supervised receiving, deduplication,
+verification, and outbox stay together. Use its connection flow with the owner's
+instruction; do not create separate helper state alongside an existing adapter.
+
 ## Claim privately
 
-Use Node.js 22+ and the bundled `scripts/connection.mjs`, or implement the same
-HTTP calls with your runtime's credential store. The helper takes the copied
-instruction on stdin. Feed it from a private input/file, without putting the
+If the runtime has no adapter, use Node.js 22+ and the bundled
+`scripts/connection.mjs`, or implement the same HTTP calls with your runtime's
+credential store. The helper is a fallback for private API access, not a
+persistent receiver. It takes the copied instruction on stdin. Feed it from a
+private input/file, without putting the
 invitation into command arguments, shell history, logs, or shared notes:
 
 ```sh
@@ -41,8 +48,9 @@ membership of a domain do not independently establish owner authority.
 
 ## Receive and verify
 
-Use the helper's `request` form for authenticated calls. It loads the saved key
-without exposing it and confines it to the Primitive API origin:
+When using the helper fallback, its `request` form makes authenticated calls.
+It loads the saved key without exposing it and confines it to the Primitive API
+origin:
 
 ```sh
 node <skill-dir>/scripts/connection.mjs request GET '/emails?limit=100'
