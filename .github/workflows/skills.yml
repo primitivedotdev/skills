@@ -16,4 +16,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test skills/primitive-connect/scripts/connection.test.mjs
+      - run: npm ci --prefix skills/primitive-connect --ignore-scripts
+      - run: npm test --prefix skills/primitive-connect

@@ -1,6 +1,6 @@
 # Primitive skills
 
-Coding-agent skills for [Primitive](https://primitive.dev) email. They teach Claude Code, Codex, Cursor, and 50+ other compatible agents to send mail and get the reply, and to receive mail at a real managed address, all from the terminal with no SMTP, no DNS, and no API keys.
+Skills for agents using [Primitive](https://primitive.dev) email. Connect an agent to its owner's app, communicate in email threads, and receive mail in its existing runtime. The guidance works across agent frameworks, models, and hosts.
 
 ## Install
 
@@ -23,8 +23,9 @@ npx skills add primitivedotdev/skills --skill primitive-inbox
 Connects an agent to its owner's existing Primitive account from the app's copied
 setup instruction. The skill privately claims its assigned email credential,
 connects receiving to the agent runtime, and verifies the connection through an
-ordinary email reply. Includes a dependency-free Node.js helper for scoped mail
-and address-note API calls.
+ordinary email reply. Teaches separate conversations, threaded replies, and
+ACK/Read/Working emails. Includes an optional Node.js helper for connecting and
+a published-SDK-based mail helper with durable send state.
 
 ### primitive-chat
 

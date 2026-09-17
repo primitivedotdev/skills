@@ -95,23 +95,50 @@ uses the current credential. Then receive and answer an ordinary owner message
 through the runtime that will keep running. Report the address and actual receive
 lifecycle, including any pending supervision or owner confirmation.
 
-## Communicate naturally
+## Conversations and progress
 
-Use `/send-mail` for new messages or replies, with your own stable idempotency
-keys. For replies, set `in_reply_to` to the inbound wire Message-ID. Keep API
-record IDs and Message-IDs distinct. Send acknowledgments, questions, progress,
-results, and delegations when useful within the owner's authorization; do not
-require a special task protocol. Avoid automatic replies to receipts or yourself.
-An accepted send is not proof of delivery or of a recipient completing work.
+Stay in the incoming conversation when answering, asking a follow-up, or reporting
+progress. Start a new thread for a separate topic. One agent address can have many
+independent conversations; never merge tasks just because the sender or subject
+matches. Keep a reply attached to the request that caused it, even when another
+message arrives while you work.
 
-Read and update shared address notes if useful using the paths in the public
-setup guide. Keep private owner context private. If a conversation uses an
-existing `interaction.json` email attachment, preserve that format and thread;
-ordinary email remains sufficient to start communicating.
+When processing a request, send a **Working** interaction email so the app can show
+activity. Renew it only while work continues; stop on completion, failure, or when
+waiting for input. Working expires within 60 seconds and is not a completion
+claim. For queued work, **ACK** can report `received`, `will_process`, or
+`will_not_process`. Send **Read** only when the agent has actually read the content,
+not merely when a receiver downloaded it. A quick answer does not also need an ACK.
+These are optional informational emails, never instructions or proof of success.
+Do not acknowledge acknowledgments, reactivate work from a receipt, or answer your
+own mail. Finish with an ordinary threaded reply containing the result or question.
+
+Use the published SDK's interaction helpers, not hand-built JSON envelopes.
+[Communication helpers](references/communication.md) provides simple send, reply,
+and signal commands plus an adapter interface that reuses your runtime's existing
+credentials. It also explains Message-ID threading and safe retries. The helpers
+use normal `/send-mail`; there is no separate interaction service.
+
+A skill alone does not install runtime behavior. Connect these actions to actual
+receive, queue, work-start, and reply events in the runtime you have. Keep its
+existing receiver and outbox. If an adapter only sends plain text, add progress
+support there instead of claiming a second identity or creating a second receiver.
+The same behavior applies to any agent, model, language, or host. Node.js helpers
+are optional; the email contract is the common interface.
+
+Before calling setup complete, verify one ordinary request and threaded answer.
+For work lasting long enough to observe, verify a Working email reaches the app
+and expires or disappears after the answer. Also start a separate conversation and
+confirm its answer stays there. Report unsupported behavior honestly. Keep changes
+to best practices grounded in these observed conversations.
+
+Read and update shared address notes when useful using the public setup guide.
+Keep private owner context private. Handle other `interaction.json` protocols
+using their existing formats; unknown interaction types are not automatic tasks.
 
 The scoped grant supports addressed email history/detail, sent mail, sending as
 your address, and address notes. The public setup guide lists the exact scope.
 Do not use account-wide CLI helpers such as `whoami`, `chat`, `emails wait`,
 `reply`, or `listen` with this credential: they require operations outside that
-scope. Use the documented HTTP calls above, or a compatible SDK runtime adapter.
+scope. Use the helpers here, documented HTTP calls, or a compatible SDK adapter.
 On authorization failure, stop authenticated work and get a fresh invitation.
