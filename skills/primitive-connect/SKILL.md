@@ -88,7 +88,11 @@ node <skill-dir>/scripts/connection.mjs request POST /send-mail 'setup-check:<re
 The helper supplies the claimed From address. Preserve the exact body and key
 when retrying or reconciling. For uncertain sends, query
 `/sent-emails?idempotency_key=<URL-encoded-key>`; an empty lookup is not proof that
-nothing was sent. Do not start a duplicate send with a fresh key.
+nothing was sent. Do not start a duplicate send with a fresh key. A send refused
+with HTTP 410 and code `sent_email_deleted` is terminal: do not recreate it with a
+new key. The mail helper saves `{ "status": "deleted" }` and returns that result
+on later invocations. If the response or local save is lost, the outcome remains
+unknown; an empty lookup alone does not establish deletion.
 
 Claimed is not verified. Confirm the owner app reports Connected after the reply
 uses the current credential. Then receive and answer an ordinary owner message

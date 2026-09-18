@@ -2,10 +2,10 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { chmod, mkdir, open, readFile, rename, rm } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { prepareSignalEmail, sendPreparedSignal } from '@primitivedotdev/sdk/interactions';
-import { run as connection } from './connection.mjs';
+import { PrimitiveApiError, run as connection } from './connection.mjs';
 
 export const commands = Object.freeze({
   send: 'send OPERATION_ID < message.json    {"to":"...","subject":"...","text":"..."}',
@@ -39,6 +39,12 @@ async function save(path, value) {
     await file.sync();
     await file.close();
     await rename(temporary, path);
+    // Windows FlushFileBuffers requires a writable handle; directories use read handles.
+    if (process.platform !== 'win32') {
+      const directory = await open(dirname(path), 'r');
+      try { await directory.sync(); }
+      finally { await directory.close(); }
+    }
   } finally {
     await file.close();
     await rm(temporary, { force: true });
@@ -107,10 +113,20 @@ export function createMailer({ identity, request, directory, now = Date.now, uui
         return { status: 'expired' };
       record.attempted = true;
       await save(path, record);
-      const send = async (body, key) => (await request('POST', '/send-mail', body, key)).data;
+      const send = async (body, key) => {
+        try { return (await request('POST', '/send-mail', body, key)).data; }
+        catch (error) {
+          // Only a typed send refusal proves deletion. Missing reads remain unknown.
+          if (!(error instanceof PrimitiveApiError) || error.status !== 410 || error.code !== 'sent_email_deleted') throw error;
+          record.receipt = { status: 'deleted' };
+          await save(path, record);
+          return null;
+        }
+      };
       const result = intent.kind === 'signal'
         ? await sendPreparedSignal(send, prepared, { accountScope: identity.org_id, now })
         : { status: 'response', result: await send(JSON.parse(prepared.requestJson), prepared.idempotencyKey) };
+      if (record.receipt) return record.receipt;
       if (result.status === 'expired') {
         record.attempted = false;
         await save(path, record);

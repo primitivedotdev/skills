@@ -8,6 +8,16 @@ import { pathToFileURL } from 'node:url';
 const ORIGIN = 'https://api.primitive.dev';
 const API = `${ORIGIN}/v1`;
 
+export class PrimitiveApiError extends Error {
+  constructor(status, code) {
+    status = Number.isInteger(status) && status >= 100 && status <= 599 ? status : undefined;
+    const safeCode = typeof code === 'string' && /^[a-z_]{1,80}$/.test(code) ? code : undefined;
+    super(`Primitive returned HTTP ${status ?? 'unknown'}${safeCode ? ` (${safeCode})` : ''}.${status === 401 ? ' Stop and ask the owner for a fresh invitation.' : ''}`);
+    this.status = status;
+    this.code = safeCode;
+  }
+}
+
 function fail(message) { throw new Error(message); }
 function json(text) {
   try { return JSON.parse(text); }
@@ -68,9 +78,7 @@ async function call(fetcher, url, options) {
   try { envelope = await response.json(); }
   catch { fail('Unreadable API response. A mutation may have succeeded; do not blindly retry it.'); }
   if (!response.ok || envelope.success === false) {
-    const code = envelope?.error?.code;
-    const safeCode = typeof code === 'string' && /^[a-z_]{1,80}$/.test(code) ? ` (${code})` : '';
-    fail(`Primitive returned HTTP ${response.status}${safeCode}.${response.status === 401 ? ' Stop and ask the owner for a fresh invitation.' : ''}`);
+    throw new PrimitiveApiError(response.status, envelope?.error?.code);
   }
   return envelope;
 }
@@ -172,7 +180,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     console.log(JSON.stringify(await run(args, { input }), null, 2));
   } catch (error) {
     // Never print response bodies, request bodies, URLs, or raw runtime exceptions.
-    const known = error instanceof Error && error.constructor === Error;
+    const known = error instanceof PrimitiveApiError || (error instanceof Error && error.constructor === Error);
     console.error(known ? error.message : 'Local connection operation failed. Check private storage and permissions.');
     process.exitCode = 1;
   }
