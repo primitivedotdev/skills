@@ -2,7 +2,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { chmod, mkdir, open, readFile, rename, rm } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { prepareSignalEmail, sendPreparedSignal } from '@primitivedotdev/sdk/interactions';
 import { PrimitiveApiError, run as connection } from './connection.mjs';
@@ -39,6 +39,9 @@ async function save(path, value) {
     await file.sync();
     await file.close();
     await rename(temporary, path);
+    const directory = await open(dirname(path), 'r');
+    try { await directory.sync(); }
+    finally { await directory.close(); }
   } finally {
     await file.close();
     await rm(temporary, { force: true });

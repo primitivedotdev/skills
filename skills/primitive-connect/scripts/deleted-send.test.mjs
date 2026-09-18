@@ -197,3 +197,44 @@ test('connection CLI preserves safe error status without exposing response conte
   assert.equal(result.stderr.includes(secret), false);
   assert.equal(new PrimitiveApiError(secret, secret).message.includes(secret), false);
 });
+
+test('outbox saves synchronize the renamed directory and propagate synchronization failure', async t => {
+  for (const failAt of [0, 1, 3]) {
+    const f = await fixture(t);
+    const preload = join(f.directory, 'sync-transport.mjs');
+    const trace = join(f.directory, 'sync-trace.json');
+    await writeFile(preload, `
+      import fs from 'node:fs';
+      const events = [], originalOpen = fs.promises.open, originalRename = fs.promises.rename;
+      let directories = 0;
+      function record(event) { events.push(event); fs.writeFileSync(${JSON.stringify(trace)}, JSON.stringify(events)); }
+      fs.promises.open = async function(path, ...args) {
+        const handle = await originalOpen(path, ...args);
+        const sync = handle.sync.bind(handle), close = handle.close.bind(handle);
+        const isDirectory = path === ${JSON.stringify(join(f.directory, 'outbox'))};
+        handle.sync = async () => {
+          record(isDirectory ? 'directory-sync' : 'file-sync');
+          if (isDirectory && ++directories === ${failAt}) throw new Error('Directory synchronization failed');
+          return sync();
+        };
+        handle.close = async () => { if (isDirectory) record('directory-close'); return close(); };
+        return handle;
+      };
+      fs.promises.rename = async (...args) => { await originalRename(...args); record('rename'); };
+      globalThis.fetch = async () => {
+        record('post');
+        return new Response(JSON.stringify({success:false,error:{code:'sent_email_deleted'}}),{status:410});
+      };
+    `);
+    const result = spawnSync(process.execPath, ['--import', preload, new URL('./mail.mjs', import.meta.url).pathname, ...cases[0].args], {
+      input: cases[0].input, encoding: 'utf8', timeout: 5000,
+      env: { ...process.env, PRIMITIVE_AGENT_STATE_DIR: f.directory },
+    });
+    assert.equal(result.status, failAt ? 1 : 0, result.stderr);
+    if (failAt) assert.equal(result.stdout, '', 'A failed sync must not return a terminal result');
+    else assert.deepEqual(JSON.parse(result.stdout), { status: 'deleted' });
+    const events = JSON.parse(await readFile(trace, 'utf8'));
+    const saved = ['file-sync', 'rename', 'directory-sync', 'directory-close'];
+    assert.deepEqual(events, failAt === 1 ? saved : [...saved, ...saved, 'post', ...saved]);
+  }
+});
