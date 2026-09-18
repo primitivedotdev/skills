@@ -5,7 +5,7 @@ import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { prepareSignalEmail, sendPreparedSignal } from '@primitivedotdev/sdk/interactions';
-import { run as connection } from './connection.mjs';
+import { PrimitiveApiError, run as connection } from './connection.mjs';
 
 export const commands = Object.freeze({
   send: 'send OPERATION_ID < message.json    {"to":"...","subject":"...","text":"..."}',
@@ -107,10 +107,20 @@ export function createMailer({ identity, request, directory, now = Date.now, uui
         return { status: 'expired' };
       record.attempted = true;
       await save(path, record);
-      const send = async (body, key) => (await request('POST', '/send-mail', body, key)).data;
+      const send = async (body, key) => {
+        try { return (await request('POST', '/send-mail', body, key)).data; }
+        catch (error) {
+          // Only a typed send refusal proves deletion. Missing reads remain unknown.
+          if (!(error instanceof PrimitiveApiError) || error.status !== 410 || error.code !== 'sent_email_deleted') throw error;
+          record.receipt = { status: 'deleted' };
+          await save(path, record);
+          return null;
+        }
+      };
       const result = intent.kind === 'signal'
         ? await sendPreparedSignal(send, prepared, { accountScope: identity.org_id, now })
         : { status: 'response', result: await send(JSON.parse(prepared.requestJson), prepared.idempotencyKey) };
+      if (record.receipt) return record.receipt;
       if (result.status === 'expired') {
         record.attempted = false;
         await save(path, record);

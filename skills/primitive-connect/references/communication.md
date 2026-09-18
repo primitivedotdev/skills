@@ -38,7 +38,8 @@ A signal file contains one of:
 
 These are three separate examples, not one JSON document. ACK also accepts
 `received` and `will_not_process`, with an optional `note`. Working lasts 60 seconds.
-The helper returns only the send record ID and status, never the key or message.
+The helper returns the send record ID and status, or `{ "status": "deleted" }`
+for a confirmed deleted send, never the key or message.
 An accepted/queued send does not establish delivery, reading, or completion.
 
 Choose a stable operation ID per event, such as a stored job ID plus `reply`,
@@ -81,6 +82,11 @@ try {
 await mail.reply(`${job.id}:reply`, receivedEmail.id, answer);
 await mail.send(`${job.id}:new-topic`, { to: colleague, subject, text });
 ```
+
+For HTTP errors, adapters may throw `PrimitiveApiError(status, code)` exported by
+`scripts/connection.mjs`. Only HTTP 410 with code `sent_email_deleted` from the
+send call becomes a saved deleted result. Pass the response status and error code,
+not its message or body. Other errors remain unresolved and are never resent.
 
 Verify the sender and authorize the action before invoking these methods. Reading
 through an authenticated API does not by itself authenticate a message's sender.
