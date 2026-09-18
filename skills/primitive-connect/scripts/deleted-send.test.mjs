@@ -198,7 +198,7 @@ test('connection CLI preserves safe error status without exposing response conte
   assert.equal(new PrimitiveApiError(secret, secret).message.includes(secret), false);
 });
 
-test('outbox saves synchronize the renamed directory and propagate synchronization failure', async t => {
+test('outbox saves synchronize the renamed directory and propagate synchronization failure', { skip: process.platform === 'win32' }, async t => {
   for (const failAt of [0, 1, 3]) {
     const f = await fixture(t);
     const preload = join(f.directory, 'sync-transport.mjs');
@@ -236,5 +236,44 @@ test('outbox saves synchronize the renamed directory and propagate synchronizati
     const events = JSON.parse(await readFile(trace, 'utf8'));
     const saved = ['file-sync', 'rename', 'directory-sync', 'directory-close'];
     assert.deepEqual(events, failAt === 1 ? saved : [...saved, ...saved, 'post', ...saved]);
+  }
+});
+
+
+test('Windows avoids unsupported directory sync while file sync failures still stop sending', async t => {
+  for (const failFileSync of [false, true]) {
+    const f = await fixture(t);
+    const preload = join(f.directory, 'windows-transport.mjs');
+    const trace = join(f.directory, 'windows-trace.json');
+    await writeFile(preload, `
+      import fs from 'node:fs';
+      Object.defineProperty(process, 'platform', { value: 'win32' });
+      const events = [], originalOpen = fs.promises.open;
+      function record(event) { events.push(event); fs.writeFileSync(${JSON.stringify(trace)}, JSON.stringify(events)); }
+      fs.promises.open = async function(path, ...args) {
+        if (path === ${JSON.stringify(join(f.directory, 'outbox'))}) {
+          record('unsupported-directory-open'); throw Object.assign(new Error('Directory unsupported'), {code:'EISDIR'});
+        }
+        const handle = await originalOpen(path, ...args), sync = handle.sync.bind(handle);
+        handle.sync = async () => {
+          record('file-sync');
+          if (${failFileSync}) throw Object.assign(new Error('File synchronization failed'), {code:'EIO'});
+          return sync();
+        };
+        return handle;
+      };
+      globalThis.fetch = async () => {
+        record('post');
+        return new Response(JSON.stringify({success:false,error:{code:'sent_email_deleted'}}),{status:410});
+      };
+    `);
+    const result = spawnSync(process.execPath, ['--import', preload, new URL('./mail.mjs', import.meta.url).pathname, ...cases[0].args], {
+      input: cases[0].input, encoding: 'utf8', timeout: 5000,
+      env: { ...process.env, PRIMITIVE_AGENT_STATE_DIR: f.directory },
+    });
+    assert.equal(result.status, failFileSync ? 1 : 0, result.stderr);
+    if (failFileSync) assert.equal(result.stdout, '');
+    else assert.deepEqual(JSON.parse(result.stdout), { status: 'deleted' });
+    assert.deepEqual(JSON.parse(await readFile(trace, 'utf8')), failFileSync ? ['file-sync'] : ['file-sync', 'file-sync', 'post', 'file-sync']);
   }
 });

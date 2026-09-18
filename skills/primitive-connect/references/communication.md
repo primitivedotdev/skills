@@ -52,6 +52,11 @@ send timed out. An empty reconciliation is still unknown; check later.
 The helper stores prepared bodies and receipts privately under the connection's
 `outbox/`. A crash may leave an operation lock: confirm its process stopped before
 removing that lock, then invoke the same operation. Keep its JSON record.
+Files are synchronized before replacement; the containing directory is also
+synchronized except on Windows, where Node cannot flush its read-only directory
+handle. This protects ordinary process restarts, not every power-loss scenario:
+Windows directory entries and newly created ancestor directories may be lost.
+Use the runtime's transactional outbox if machine-crash durability is required.
 Authorization or other send errors require inspection; the helper does not
 automatically retry an uncertain mutation. An expired unsent Working event is
 not sent. Report current work through a new event only if work is still active.

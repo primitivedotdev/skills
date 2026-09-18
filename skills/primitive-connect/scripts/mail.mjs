@@ -39,9 +39,12 @@ async function save(path, value) {
     await file.sync();
     await file.close();
     await rename(temporary, path);
-    const directory = await open(dirname(path), 'r');
-    try { await directory.sync(); }
-    finally { await directory.close(); }
+    // Windows FlushFileBuffers requires a writable handle; directories use read handles.
+    if (process.platform !== 'win32') {
+      const directory = await open(dirname(path), 'r');
+      try { await directory.sync(); }
+      finally { await directory.close(); }
+    }
   } finally {
     await file.close();
     await rm(temporary, { force: true });
