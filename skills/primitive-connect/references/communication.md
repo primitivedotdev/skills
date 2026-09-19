@@ -41,8 +41,10 @@ These are separate examples, not one JSON document. ACK also accepts
 `received` and `will_not_process`, with an optional `note`. Working lasts 60 seconds;
 Typing lasts 30 seconds. Send Typing immediately before composing your reply,
 then send the reply normally. Do not add a delay to keep the indicator visible.
-The helper returns the send record ID and status, or `{ "status": "deleted" }`
-for a confirmed deleted send, never the key or message.
+The helper returns the send record ID and status, `{ "status": "deleted" }` for a
+confirmed deleted send, or `{ "status": "expired" }` when activity expired before
+transmission. Deleted and expired results have no send record ID. It never returns
+the key or message.
 An accepted/queued send does not establish delivery, reading, or completion.
 
 Choose a stable operation ID per event, such as a stored job ID plus `reply`,
@@ -113,8 +115,9 @@ If the runtime already owns durable sends, use the released
 an authenticated parent (`accountScope`, `from`, `to`, `messageId`, `subject`,
 `references`) plus ACK/Read/Working/Typing fields. Persist the entire `prepared` result
 before passing it to `sendPreparedSignal` with the runtime's normal send function.
-Working and Typing take `expiresAtMs`, at most 60 seconds ahead. These functions
-create the human-readable body, `interaction.json` attachment, reply headers, and
+Both protocols allow `expiresAtMs` up to 60 seconds ahead. Match this helper by
+using 60 seconds for Working and 30 seconds for Typing. These functions create
+the human-readable body, `interaction.json` attachment, reply headers, and
 stable send key. They only call the ordinary send function you provide.
 
 For other languages, retain the same email contract and lifecycle in the native
