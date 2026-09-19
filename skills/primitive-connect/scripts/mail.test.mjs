@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -43,19 +44,29 @@ test('replies preserve wire ancestry and new messages start a separate thread', 
 });
 test('all progress kinds use the published SDK format and ordinary send-mail', async t => {
   const f = await fixture(t);
-  for (const input of [{ kind: 'ack', status: 'will_process' }, { kind: 'read' }, { kind: 'working' }]) {
+  for (const input of [{ kind: 'ack', status: 'will_process' }, { kind: 'read' }, { kind: 'working' }, { kind: 'typing' }]) {
     await f.mail.signal(input.kind, parent.id, input);
     const call = f.calls.at(-1);
     assert.equal(call.path, '/send-mail');
     assert.equal(call.body.in_reply_to, parent.message_id);
     assert.equal(call.body.attachments.length, 1);
     assert.equal(call.body.attachments[0].filename, 'interaction.json');
+    const envelope = JSON.parse(Buffer.from(call.body.attachments[0].content_base64, 'base64'));
     assert.equal(parseInteractionEnvelope(Buffer.from(call.body.attachments[0].content_base64, 'base64')).status, 'valid');
+    assert.equal(envelope.protocol, input.kind);
+    assert.equal(envelope.step, input.kind);
+    assert.equal(envelope.payload.subject_message_id, parent.message_id);
+    assert.deepEqual(call.body.references, [...parent.references, parent.message_id]);
+    if (input.kind === 'typing') {
+      assert.equal(call.body.body_text, 'I am composing a reply to your message.');
+      assert.equal(Date.parse(envelope.expires_at), 31000);
+    }
   }
   const files = await readdir(f.directory);
   const records = await Promise.all(files.map(async name => JSON.parse(await readFile(join(f.directory, name), 'utf8'))));
   const working = records.find(r => r.intent.input.kind === 'working');
   assert.equal(working.prepared.expiresAtMs, 61000);
+  assert.equal(records.find(r => r.intent.input.kind === 'typing').prepared.expiresAtMs, 31000);
   for (const name of files) assert.equal((await stat(join(f.directory, name))).mode & 0o777, 0o600);
   assert.equal((await stat(f.directory)).mode & 0o777, 0o700);
 });
@@ -67,17 +78,17 @@ test('restarts reuse the persisted receipt and refuse changed content', async t 
   assert.equal(f.calls.filter(c => c.method === 'POST').length, 1);
   await assert.rejects(restarted.reply('operation', parent.id, 'Different'), /different message/);
 });
-test('lost send responses reconcile without reissuing the email or expiring an accepted working receipt', async t => {
+for (const kind of ['working', 'typing']) test(`lost ${kind} send responses reconcile without reissuing or expiring an accepted receipt`, async t => {
   const f = await fixture(t);
   f.lose();
-  await assert.rejects(f.mail.signal('work', parent.id, { kind: 'working' }));
+  await assert.rejects(f.mail.signal('work', parent.id, { kind }));
   const restarted = createMailer(f.options);
-  await assert.rejects(restarted.signal('work', parent.id, { kind: 'working' }), /still unknown/);
+  await assert.rejects(restarted.signal('work', parent.id, { kind }), /still unknown/);
   f.tick(120000); f.reconcile();
-  assert.equal((await restarted.signal('work', parent.id, { kind: 'working' })).status, 'delivered');
+  assert.equal((await restarted.signal('work', parent.id, { kind })).status, 'delivered');
   assert.equal(f.calls.filter(c => c.method === 'POST').length, 1);
 });
-test('does not emit signals to itself, foreign mail, or interaction carriers', async t => {
+for (const kind of ['working', 'typing']) test(`${kind} refuses self, foreign mail, and interaction carriers`, async t => {
   const f = await fixture(t);
   for (const message of [
     { ...parent, from_email: identity.address },
@@ -89,7 +100,7 @@ test('does not emit signals to itself, foreign mail, or interaction carriers', a
     const mail = createMailer({ ...f.options, request: async (method) => {
       assert.equal(method, 'GET'); return { data: message };
     } });
-    await assert.rejects(mail.signal('invalid-parent', parent.id, { kind: 'working' }));
+    await assert.rejects(mail.signal('invalid-parent', parent.id, { kind }));
   }
 });
 test('concurrent retries cannot send twice', async t => {
@@ -106,16 +117,17 @@ test('concurrent retries cannot send twice', async t => {
   release(); await first;
   assert.equal(f.calls.filter(c => c.method === 'POST').length, 1);
 });
-test('never transmits an expired prepared working signal', async t => {
+for (const kind of ['working', 'typing']) test(`never transmits an expired prepared ${kind} signal`, async t => {
   const f = await fixture(t);
   const mail = createMailer({ ...f.options, now: (() => { let calls = 0; return () => ++calls < 3 ? 1000 : 100000; })() });
-  assert.equal((await mail.signal('stale', parent.id, { kind: 'working' })).status, 'expired');
+  assert.equal((await mail.signal('stale', parent.id, { kind })).status, 'expired');
   assert.equal(f.calls.filter(c => c.method === 'POST').length, 0);
 });
 test('command manifest and actual bare/help/send/reply/signal invocations agree', async t => {
   const f = await fixture(t);
   const script = new URL('./mail.mjs', import.meta.url).pathname;
   assert.deepEqual(Object.keys(commands).sort(), ['reply', 'send', 'signal']);
+  assert.ok(commands.signal.includes('{"kind":"typing"}'));
   for (const args of [[], ['help'], ['--help']]) {
     const result = spawnSync(process.execPath, [script, ...args], { encoding: 'utf8' });
     assert.equal(result.status, 0, result.stderr);
@@ -133,6 +145,18 @@ test('command manifest and actual bare/help/send/reply/signal invocations agree'
   const preload = join(f.directory, 'transport.mjs');
   await writeFile(preload, `globalThis.fetch = async (url, init) => {
     if (!url.startsWith('https://api.primitive.dev/v1/')) throw Error('Unexpected origin');
+    if (init.method === 'POST') {
+      const body = JSON.parse(init.body);
+      if (body.attachments) {
+        const envelope = JSON.parse(Buffer.from(body.attachments[0].content_base64, 'base64'));
+        if (envelope.protocol === 'typing') {
+          if (envelope.step !== 'typing' || envelope.payload.subject_message_id !== ${JSON.stringify(parent.message_id)}) throw Error('Wrong typing parent');
+          const remaining = Date.parse(envelope.expires_at) - Date.now();
+          if (remaining <= 0 || remaining > 30000) throw Error('Wrong typing expiry');
+          if (body.body_text !== 'I am composing a reply to your message.') throw Error('Wrong fallback');
+        }
+      }
+    }
     const data = init.method === 'GET' ? ${JSON.stringify(parent)} : {id:'sent-test',status:'queued'};
     return new Response(JSON.stringify({success:true,data}));
   };`);
@@ -140,6 +164,7 @@ test('command manifest and actual bare/help/send/reply/signal invocations agree'
     [['send', 'new'], JSON.stringify({ to: parent.from_email, subject: 'Topic', text: 'Hello' })],
     [['reply', parent.id, 'answer'], 'An answer'],
     [['signal', parent.id, 'working'], '{"kind":"working"}'],
+    [['signal', parent.id, 'typing'], '{"kind":"typing"}'],
   ]) {
     const result = spawnSync(process.execPath, ['--import', preload, script, ...args], {
       input, encoding: 'utf8', env: { ...process.env, PRIMITIVE_AGENT_STATE_DIR: f.directory },
@@ -169,4 +194,26 @@ test('refuses CRLF and control characters before sending ordinary mail', async t
   for (const subject of ['Topic\r\nBcc: other@example.test', 'Topic\0'])
     await assert.rejects(f.mail.send('unsafe', { to: parent.from_email, subject, text: 'Hello' }));
   assert.equal(f.calls.length, 0);
+});
+
+
+test('typing receipts survive restart and cannot be reused for changed intent or account scope', async t => {
+  const f = await fixture(t);
+  const input = { kind: 'typing' };
+  const first = await f.mail.signal('compose', parent.id, input);
+  const files = await readdir(f.directory);
+  const saved = JSON.parse(await readFile(join(f.directory, files[0]), 'utf8'));
+  f.tick(60000);
+  const request = async () => assert.fail('Persisted receipt and scope checks must precede network');
+  const fresh = createMailer({ ...f.options, request });
+  assert.deepEqual(await fresh.signal('compose', parent.id, input), first);
+  await assert.rejects(fresh.signal('compose', parent.id, { kind: 'working' }), /different message/);
+  await assert.rejects(fresh.signal('compose', 'different-parent', input), /different message/);
+  for (const scope of [{ ...identity, org_id: 'other-org' }, { ...identity, address: 'other@example.test' }]) {
+    const hash = createHash('sha256').update(JSON.stringify([scope, 'compose'])).digest('hex');
+    await writeFile(join(f.directory, hash + '.json'), JSON.stringify(saved));
+    const other = createMailer({ ...f.options, identity: scope, request });
+    await assert.rejects(other.signal('compose', parent.id, input), /different message/);
+  }
+  assert.equal(f.calls.filter(c => c.method === 'POST').length, 1);
 });
