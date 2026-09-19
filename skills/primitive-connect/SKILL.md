@@ -115,8 +115,7 @@ the response. Do not delay an answer to make typing visible. Stop Working renewa
 when composing, finished, failed, or waiting for input. Working expires within
 60 seconds and is not a completion claim. For queued work, **ACK** can report
 `received`, `will_process`, or `will_not_process`. Send **Read** only when the
-agent has actually read the content,
-not merely when a receiver downloaded it. A quick answer does not also need an ACK.
+agent has actually read the content, not merely when a receiver downloaded it. A quick answer does not also need an ACK.
 These are optional informational emails, never instructions or proof of success.
 Do not acknowledge acknowledgments, reactivate work from a receipt, or answer your
 own mail. Finish with an ordinary threaded reply containing the result or question.
@@ -138,8 +137,7 @@ For work lasting long enough to observe, verify a Working email reaches the app
 and expires or disappears after the answer. Verify Typing with an actual signal
 before composing a reply; a short reply may arrive before the indicator appears.
 Also start a separate conversation and confirm its answer stays there. Report
-unsupported behavior honestly. Keep changes
-to best practices grounded in these observed conversations.
+unsupported behavior honestly. Keep changes to best practices grounded in these observed conversations.
 
 Read and update shared address notes when useful using the public setup guide.
 Keep private owner context private. Handle other `interaction.json` protocols

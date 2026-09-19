@@ -50,8 +50,7 @@ Choose a stable operation ID per event, such as a stored job ID plus `reply`,
 its stored receipt or reconciles an uncertain send; it never silently issues a
 duplicate. Changing the content under the same ID is rejected. Each intentional
 Working or Typing renewal is a new event with its own ID. Never generate a new ID
-merely because a
-send timed out. An empty reconciliation is still unknown; check later.
+merely because a send timed out. An empty reconciliation is still unknown; check later.
 
 The helper stores prepared bodies and receipts privately under the connection's
 `outbox/`. A crash may leave an operation lock: confirm its process stopped before
@@ -116,8 +115,7 @@ an authenticated parent (`accountScope`, `from`, `to`, `messageId`, `subject`,
 before passing it to `sendPreparedSignal` with the runtime's normal send function.
 Working and Typing take `expiresAtMs`, at most 60 seconds ahead. These functions
 create the human-readable body, `interaction.json` attachment, reply headers, and
-stable send
-key. They only call the ordinary send function you provide.
+stable send key. They only call the ordinary send function you provide.
 
 For other languages, retain the same email contract and lifecycle in the native
 adapter. Use the published SDK protocol as the reference; don't invent an
