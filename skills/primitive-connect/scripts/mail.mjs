@@ -10,7 +10,7 @@ import { PrimitiveApiError, run as connection } from './connection.mjs';
 export const commands = Object.freeze({
   send: 'send OPERATION_ID < message.json    {"to":"...","subject":"...","text":"..."}',
   reply: 'reply EMAIL_ID OPERATION_ID < reply.txt',
-  signal: 'signal EMAIL_ID OPERATION_ID < signal.json    {"kind":"working"}, {"kind":"read"}, or {"kind":"ack","status":"received"}',
+  signal: 'signal EMAIL_ID OPERATION_ID < signal.json    {"kind":"typing"}, {"kind":"working"}, {"kind":"read"}, or {"kind":"ack","status":"received"}',
 });
 export const help = `Usage: mail.mjs ${Object.values(commands).join('\n       mail.mjs ')}\n\nEMAIL_ID is a received email record ID. Reuse OPERATION_ID for the same operation.\nBodies come from stdin. Signals are ordinary emails. Verify the sender before replying or reporting progress.`;
 class MailError extends Error {}
@@ -147,10 +147,10 @@ export function createMailer({ identity, request, directory, now = Date.now, uui
         body_text: bodyText(text), in_reply_to: p.messageId, references: [...new Set([...p.references, p.messageId])] });
     }),
     signal: (id, emailId, input) => operation(id, { kind: 'signal', emailId, input }, async () => {
-      check(input && ['ack', 'read', 'working'].includes(input.kind), 'Choose ack, read, or working.');
+      check(input && ['ack', 'read', 'working', 'typing'].includes(input.kind), 'Choose ack, read, working, or typing.');
       const p = await parent(emailId, true);
       const result = prepareSignalEmail({ ...input, parent: p,
-        ...(input.kind === 'working' ? { expiresAtMs: now() + 60000 } : {}) }, { now, uuid });
+        ...(['working', 'typing'].includes(input.kind) ? { expiresAtMs: now() + (input.kind === 'typing' ? 30000 : 60000) } : {}) }, { now, uuid });
       check(result.status === 'prepared', 'Wait for the parent email Message-ID before reporting progress.');
       return result.prepared;
     }),

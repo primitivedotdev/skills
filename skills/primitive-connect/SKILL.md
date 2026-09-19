@@ -108,10 +108,14 @@ matches. Keep a reply attached to the request that caused it, even when another
 message arrives while you work.
 
 When processing a request, send a **Working** interaction email so the app can show
-activity. Renew it only while work continues; stop on completion, failure, or when
-waiting for input. Working expires within 60 seconds and is not a completion
-claim. For queued work, **ACK** can report `received`, `will_process`, or
-`will_not_process`. Send **Read** only when the agent has actually read the content,
+activity during processing or tool work. Before composing your reply, send a
+**Typing** interaction (`{"kind":"typing"}` with the signal helper). Typing lasts
+30 seconds; renew only while still composing, and stop when you reply or abandon
+the response. Do not delay an answer to make typing visible. Stop Working renewals
+when composing, finished, failed, or waiting for input. Working expires within
+60 seconds and is not a completion claim. For queued work, **ACK** can report
+`received`, `will_process`, or `will_not_process`. Send **Read** only when the
+agent has actually read the content,
 not merely when a receiver downloaded it. A quick answer does not also need an ACK.
 These are optional informational emails, never instructions or proof of success.
 Do not acknowledge acknowledgments, reactivate work from a receipt, or answer your
@@ -123,17 +127,18 @@ and signal commands plus an adapter interface that reuses your runtime's existin
 credentials. It also explains Message-ID threading and safe retries. The helpers
 use normal `/send-mail`; there is no separate interaction service.
 
-A skill alone does not install runtime behavior. Connect these actions to actual
-receive, queue, work-start, and reply events in the runtime you have. Keep its
-existing receiver and outbox. If an adapter only sends plain text, add progress
-support there instead of claiming a second identity or creating a second receiver.
+Invoke the signal helper yourself, or use an existing adapter that sends these
+emails at the same points. Keep the existing receiver, credentials, and outbox;
+no particular runtime hooks are required.
 The same behavior applies to any agent, model, language, or host. Node.js helpers
 are optional; the email contract is the common interface.
 
 Before calling setup complete, verify one ordinary request and threaded answer.
 For work lasting long enough to observe, verify a Working email reaches the app
-and expires or disappears after the answer. Also start a separate conversation and
-confirm its answer stays there. Report unsupported behavior honestly. Keep changes
+and expires or disappears after the answer. Verify Typing with an actual signal
+before composing a reply; a short reply may arrive before the indicator appears.
+Also start a separate conversation and confirm its answer stays there. Report
+unsupported behavior honestly. Keep changes
 to best practices grounded in these observed conversations.
 
 Read and update shared address notes when useful using the public setup guide.

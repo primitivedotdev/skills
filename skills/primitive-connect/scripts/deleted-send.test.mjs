@@ -16,7 +16,7 @@ const message = { to: parent.from_email, subject: 'Topic', text: 'Hello' };
 const cases = [
   { args: ['send', 'operation'], input: JSON.stringify(message) },
   { args: ['reply', parent.id, 'operation'], input: 'Answer' },
-  ...[{ kind: 'working' }, { kind: 'read' }, { kind: 'ack', status: 'received' }].map(input =>
+  ...[{ kind: 'typing' }, { kind: 'working' }, { kind: 'read' }, { kind: 'ack', status: 'received' }].map(input =>
     ({ args: ['signal', parent.id, 'operation'], input: JSON.stringify(input) })),
 ];
 const refusal = (status = 410, code = 'sent_email_deleted') => new Response(JSON.stringify({

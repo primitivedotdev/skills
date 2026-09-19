@@ -32,21 +32,25 @@ A signal file contains one of:
 
 ```json
 {"kind":"working"}
+{"kind":"typing"}
 {"kind":"ack","status":"will_process"}
 {"kind":"read"}
 ```
 
-These are three separate examples, not one JSON document. ACK also accepts
-`received` and `will_not_process`, with an optional `note`. Working lasts 60 seconds.
+These are separate examples, not one JSON document. ACK also accepts
+`received` and `will_not_process`, with an optional `note`. Working lasts 60 seconds;
+Typing lasts 30 seconds. Send Typing immediately before composing your reply,
+then send the reply normally. Do not add a delay to keep the indicator visible.
 The helper returns the send record ID and status, or `{ "status": "deleted" }`
 for a confirmed deleted send, never the key or message.
 An accepted/queued send does not establish delivery, reading, or completion.
 
 Choose a stable operation ID per event, such as a stored job ID plus `reply`,
-`ack`, or a work-renewal sequence. Repeating that operation returns its stored
-receipt or reconciles an uncertain send; it never silently issues a duplicate.
-Changing the content under the same ID is rejected. Each intentional Working
-renewal is a new event with its own ID. Never generate a new ID merely because a
+`ack`, `typing`, or an activity-renewal sequence. Repeating that operation returns
+its stored receipt or reconciles an uncertain send; it never silently issues a
+duplicate. Changing the content under the same ID is rejected. Each intentional
+Working or Typing renewal is a new event with its own ID. Never generate a new ID
+merely because a
 send timed out. An empty reconciliation is still unknown; check later.
 
 The helper stores prepared bodies and receipts privately under the connection's
@@ -58,8 +62,8 @@ handle. This protects ordinary process restarts, not every power-loss scenario:
 Windows directory entries and newly created ancestor directories may be lost.
 Use the runtime's transactional outbox if machine-crash durability is required.
 Authorization or other send errors require inspection; the helper does not
-automatically retry an uncertain mutation. An expired unsent Working event is
-not sent. Report current work through a new event only if work is still active.
+automatically retry an uncertain mutation. An expired unsent activity event is
+not sent. Create a fresh event only while that activity is still happening.
 
 ## Existing runtime adapters
 
@@ -83,7 +87,13 @@ try {
 } catch {
   // Record unavailable progress without preventing the actual work.
 }
-// Run the work, then reply to its original request.
+// Run the work. Immediately before composing the answer:
+try {
+  await mail.signal(`${job.id}:composing`, receivedEmail.id, { kind: 'typing' });
+} catch {
+  // Continue composing even when the signal is unavailable.
+}
+// Compose the answer, then reply to the original request.
 await mail.reply(`${job.id}:reply`, receivedEmail.id, answer);
 await mail.send(`${job.id}:new-topic`, { to: colleague, subject, text });
 ```
@@ -102,10 +112,11 @@ protocol-specific handling for an actual structured request.
 If the runtime already owns durable sends, use the released
 `@primitivedotdev/sdk/interactions` functions directly: `prepareSignalEmail` accepts
 an authenticated parent (`accountScope`, `from`, `to`, `messageId`, `subject`,
-`references`) plus ACK/Read/Working fields. Persist the entire `prepared` result
+`references`) plus ACK/Read/Working/Typing fields. Persist the entire `prepared` result
 before passing it to `sendPreparedSignal` with the runtime's normal send function.
-Working takes `expiresAtMs`, at most 60 seconds ahead. These functions create the
-human-readable body, `interaction.json` attachment, reply headers, and stable send
+Working and Typing take `expiresAtMs`, at most 60 seconds ahead. These functions
+create the human-readable body, `interaction.json` attachment, reply headers, and
+stable send
 key. They only call the ordinary send function you provide.
 
 For other languages, retain the same email contract and lifecycle in the native
@@ -133,18 +144,21 @@ alternative JSON shape or require a model to reconstruct MIME attachments.
 | --- | --- |
 | Message durably queued | Optional ACK `received` or `will_process` if a wait needs explaining. |
 | Agent begins processing | Send Working, then run the model/tools. Renew roughly every 30 seconds only while that job is active. |
+| Agent begins composing a reply | Send Typing. Renew about every 20 seconds only if still composing; stop on reply or abandonment. |
 | Content actually read | Optional Read assertion. Downloading an inbox page is insufficient. |
-| Work completes or needs input | Stop renewing Working; send the result or question in the same thread. |
+| Work completes or needs input | Stop renewing activity; send the result or question in the same thread. |
 | Work fails or is declined | Stop renewing. Give a truthful threaded explanation; use `will_not_process` only if applicable. |
-| ACK/Read/Working received | Update observation state only. No automatic reply, new task, or renewal. |
+| ACK/Read/Working/Typing received | Update observation state only. No automatic reply, new task, or renewal. |
 
 Progress reporting is best effort. A failed report must not prevent the actual
 answer or consume an unbounded retry budget. Background receiving and active-work
-renewal belong in supervised runtime code, not a long-running model tool call.
+renewal can use the existing runtime; individual signals can be sent directly
+with the helper. No streaming model integration is required.
 After restart, resume actual queued work and reconcile the outbox; do not replay
-stale activity events. Do not emit Working while waiting for the owner or another
-agent. Track simultaneous jobs independently and stop each job's renewal on its
-own terminal state. A received signal carries no new authority.
+stale activity events. Do not emit Working or Typing while waiting for the owner
+or another agent. Typing means composing a reply, not reasoning, fetching, or tool
+execution. Track simultaneous jobs independently and stop each job's renewal on
+its own terminal state. A received signal carries no new authority.
 
 Dogfood with an ordinary request, a longer task, two simultaneous conversations,
 and a restart during an uncertain send. Check actual emails and the visible app
