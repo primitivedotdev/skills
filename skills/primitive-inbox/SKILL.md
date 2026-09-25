@@ -27,10 +27,11 @@ Give your agent a real inbox: a managed `*.primitive.email` address that receive
 - You sent a message and need to watch for the response.
 - You are building a workflow that reacts to inbound mail (parse it, trigger on it, route it).
 - You need a managed/throwaway address for a signup or an email verification.
-- Someone emailed your address and expects an answer (see **Replying** for when not to).
+- Someone emailed your address and answering it is part of the task the user gave you (see **Replying** for when not to).
 
 **Ask the user first:**
 
+- Replying to a person when the user has not asked you to handle that mail, or when the reply could create a ticket, lead, or commitment.
 - Signing the address up for a third-party service, newsletter, or anything with side effects on a human.
 - Deploying a Function that auto-replies or takes action on inbound mail: confirm the behavior, and that it follows the rules in **Replying**, before it runs on real messages.
 
@@ -94,10 +95,12 @@ To run your **own code** on every inbound message (not just read it), deploy a P
 
 ## Replying
 
+If you were connected through the owner's app (the primitive-connect skill), reply through that skill instead: its scoped credential cannot run these commands.
+
 Answer an inbound email with `primitive reply`. Primitive derives the recipient, the `Re:` subject, and the threading headers from the inbound id, so the reply lands in the same conversation:
 
 ```bash
-primitive reply --id <inbound-email-id> --body "..."    # or --body-file ./reply.txt
+primitive reply --id <inbound-email-id> --body-file ./reply.txt   # keeps the text out of argv and shell history
 ```
 
 **Check the conversation before every reply.** You may already have answered, in this session or an earlier one:
