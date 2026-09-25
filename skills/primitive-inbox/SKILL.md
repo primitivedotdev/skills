@@ -101,7 +101,7 @@ To run your **own code** on every inbound message (not just read it), deploy a P
 ```bash
 primitive inbox next --json > next.json     # exit 5: nothing awaits you, stop
 # read .conversation.messages (role "assistant" = your own sends), then:
-primitive reply --id "$(jq -r .email.id next.json)" --body "..."
+primitive reply --id "$(jq -r .email.id next.json)" --body-file ./reply.txt
 primitive inbox next --json                 # the next one
 ```
 
