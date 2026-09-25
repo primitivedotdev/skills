@@ -98,17 +98,11 @@ To run your **own code** on every inbound message (not just read it), deploy a P
 
 `primitive inbox next` returns the oldest email that still awaits your reply, with its conversation and the exact reply command. Repeat until it exits 5:
 
-1. `primitive inbox next --json > next.json`. Exit 5: nothing awaits you, stop. Exit 1: stop and report.
+1. `primitive inbox next --json > next.json`. Exit 0: an email awaits you. Exit 5: nothing awaits you (with `--wait`, still nothing at `--timeout`), stop. Exit 1 with `error.code` `reply_state_unsupported`: the server cannot report reply state, so answer by hand using **Replying** below. Any other exit 1: stop and report the error.
 2. Read `.conversation.messages` (role `assistant` = your own sends) and decide whether to reply (see **Replying**).
 3. `primitive reply --id "$(jq -r .email.id next.json)" --body-file ./reply.txt`. Go back to step 1 only on exit 0. On exit 1 nothing went out; on exit 4 check `primitive sent list` before any further reply.
 
 An email you leave unanswered stays first in line, so if you decide not to reply to it, stop and tell the user instead of looping.
-
-| `inbox next` exit | Meaning |
-|---|---|
-| 0 | An email awaits your reply. |
-| 1 | Error. `reply_state_unsupported` means the server cannot report reply state; use the manual checks below. |
-| 5 | Nothing awaits your reply (with `--wait`, still nothing at `--timeout`). |
 
 - Automated mail (bounces, mailer-daemon, your own addresses, Auto-Submitted, bulk and list mail) is skipped and listed in `skipped_automated`. `automated.automation_headers_known: false` means a newsletter or auto-reply from an ordinary address cannot be ruled out, so apply the rules below.
 - `--wait [--timeout N]` blocks until something awaits you (default 300 seconds).
