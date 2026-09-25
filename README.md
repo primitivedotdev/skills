@@ -33,7 +33,7 @@ Teaches the `primitive chat <email> <message>` verb: send an email and wait for 
 
 ### primitive-inbox
 
-Gives your agent a real, managed `*.primitive.email` address that receives mail, plus the verbs to read it (`primitive emails latest`), wait for it (`primitive emails wait`), and run a hosted Function on every inbound message. Reach for it whenever the agent needs to receive email: a reply, a verification code, an alert, or a throwaway address for a signup.
+Gives your agent a real, managed `*.primitive.email` address that receives mail, plus the verbs to read it (`primitive emails latest`), wait for it (`primitive emails wait`), answer it in its thread (`primitive reply`), and run a hosted Function on every inbound message. Reach for it whenever the agent needs to receive or answer email: a reply, a verification code, an alert, or a throwaway address for a signup. It also teaches when not to reply: check the conversation for your own earlier replies first, and never answer bounces, no-reply senders, auto-replies, or list mail.
 
 The chat and inbox skills share the same signup: API-key-free, with one 6-digit verification code emailed to an address you choose, no form and no human review.
 

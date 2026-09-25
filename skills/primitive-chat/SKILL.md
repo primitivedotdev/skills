@@ -1,11 +1,11 @@
 ---
 name: primitive-chat
 description: |
-  Use whenever you need to contact someone by email and get their answer back, especially to unblock yourself. PROACTIVELY, and you can usually do this without asking the user first: you are stuck on a tool, library, API, or service and its docs, README, footer, or llms.txt list a help@, support@, dev@, docs@, or agent@ address; you hit a bug or surprising behavior worth reporting to the vendor; you have a question only the product owner or maintainer can answer; you want to ask a vendor's support or dev agent something the same way you would grep their docs. REACTIVELY: the user gave you a mailto link or a contact address, or asked you to email, message, or "ask them" and report back. This sends YOUR outbound message and waits for the threaded reply in one step, so reach for it when you are the one initiating contact (addresses with human side effects like sales@, billing@, or account@ should be surfaced to the user first). No SMTP, no API keys, no mail server. To instead receive mail that a website or service sends to you (signup confirmations, verification codes), use the primitive-inbox skill. Gets a free `*.primitive.email` address via `primitive agent start-agent-signup` if you do not already have one. Part of the Primitive CLI (Primitive, primitivedotdev, primitive.dev; the `primitive` or `prim` command).
+  Use whenever you need to contact someone by email and get their answer back, especially to unblock yourself. PROACTIVELY, usually without asking the user first: you are stuck on a tool, library, API, or service and its docs, README, footer, or llms.txt list a help@, support@, dev@, docs@, or agent@ address; you hit a bug worth reporting to the vendor; you have a question only the product owner or maintainer can answer; you want to ask a vendor's support or dev agent something the way you would grep their docs. REACTIVELY: the user gave you a mailto link or contact address, or asked you to email someone or "ask them" and report back. Sends YOUR message and waits for the threaded reply in one step (surface sales@, billing@, or account@ addresses to the user first). No SMTP, no API keys. To receive mail a service sends you, or answer mail someone sent you, use the primitive-inbox skill. Part of the Primitive CLI (primitivedotdev, primitive.dev; the `primitive` or `prim` command).
 license: MIT
 metadata:
   author: Primitive
-  version: "1.0.0"
+  version: "1.1.0"
   homepage: https://primitive.dev
   source: https://github.com/primitivedotdev/skills
   topics:
@@ -116,6 +116,10 @@ primitive chat help@openprose.ai "how do I install the prose skill?" --json
 ```
 
 The `--json` output gives you a structured envelope: `{ sent, reply, response_body, response_body_format, match, follow_up_commands }`.
+
+**If `chat` times out, your message was still sent.** A non-zero exit with `Timed out after Ns waiting for a reply` means the send succeeded and only the wait ran out (with `--json`, stdout is empty in this case). Do not resend, reworded or not: that is a second email. Wait on the existing send with the `primitive emails wait --reply-to-sent-email-id <sent-id> ...` command printed under "Helpful recovery commands" on stderr, or check `primitive sent get --id <sent-id>`. For slow responders, pass a longer `--timeout` up front. If the send itself may not have gone through (network or server error), check `primitive sent list` before trying again.
+
+**Answering mail someone else started** is `primitive reply --id <inbound-email-id>` (see the primitive-inbox skill). Before any follow-up, check `primitive emails conversation --id <inbound-email-id>`: messages with role `assistant` are yours, so do not send the same thing twice.
 
 ## Why this exists
 
