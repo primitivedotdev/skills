@@ -3,9 +3,10 @@ name: primitive-chat
 description: |
   Use whenever you need to contact someone by email and get their answer back, especially to unblock yourself. PROACTIVELY, usually without asking the user first: you are stuck on a tool, library, API, or service and its docs, README, footer, or llms.txt list a help@, support@, dev@, docs@, or agent@ address; you hit a bug worth reporting to the vendor; you have a question only the product owner or maintainer can answer; you want to ask a vendor's support or dev agent something the way you would grep their docs. REACTIVELY: the user gave you a mailto link or contact address, or asked you to email someone or "ask them" and report back. Sends YOUR message and waits for the threaded reply in one step (surface sales@, billing@, or account@ addresses to the user first). No SMTP, no API keys. To receive mail a service sends you, or answer mail someone sent you, use the primitive-inbox skill. Part of the Primitive CLI (primitivedotdev, primitive.dev; the `primitive` or `prim` command).
 license: MIT
+compatibility: Requires the primitive CLI (@primitivedotdev/cli) >= <next release> for send outcome exit codes.
 metadata:
   author: Primitive
-  version: "1.1.0"
+  version: "1.2.0"
   homepage: https://primitive.dev
   source: https://github.com/primitivedotdev/skills
   topics:
@@ -115,9 +116,19 @@ Get parse-safe output:
 primitive chat help@openprose.ai "how do I install the prose skill?" --json
 ```
 
-The `--json` output gives you a structured envelope: `{ sent, reply, response_body, response_body_format, match, follow_up_commands }`.
+The `--json` output gives you a structured envelope: `{ outcome, sent, reply, response_body, response_body_format, match, follow_up_commands }`, printed for every outcome, including failures.
 
-**If `chat` times out, your message was still sent.** A non-zero exit with `Timed out after Ns waiting for a reply` means the send succeeded and only the wait ran out (with `--json`, stdout is empty in this case). Do not resend, reworded or not: that is a second email. Wait on the existing send with the `primitive emails wait --reply-to-sent-email-id <sent-id> ...` command printed under "Helpful recovery commands" on stderr, or check `primitive sent get --id <sent-id>`. For slow responders, pass a longer `--timeout` up front. If the send itself may not have gone through (network or server error), check `primitive sent list` before trying again.
+**If `chat` times out, your message was still sent.** It exits 3 (`outcome: "sent_awaiting_reply"`) and prints `Message sent (id X). No reply yet after Ns. Do NOT resend; wait with: <command>`. Do not resend, reworded or not: that is a second email. Run the printed wait command (with `--json`, `follow_up_commands` only waits on or inspects the existing send), or pass a longer `--timeout` up front for slow responders.
+
+Exit codes and `outcome` values, for `chat`, `chat reply`, `send`, and `reply`:
+
+| Exit | `outcome` | Meaning |
+|---|---|---|
+| 0 | `replied`, `sent`, `already_sent` | Went out (or already had). Do not resend. |
+| 1 | `not_sent` | Rejected or failed before sending. Nothing went out. |
+| 2 | | Invalid flags. Nothing went out. |
+| 3 | `sent_awaiting_reply` | Sent, no reply before `--timeout`. Wait; do not resend. |
+| 4 | `uncertain` | May or may not have gone out. Check `primitive sent list` before retrying. |
 
 **Answering mail someone else started** is `primitive reply --id <inbound-email-id>` (see the primitive-inbox skill). Before any follow-up, check `primitive emails conversation --id <inbound-email-id>`: messages with role `assistant` are yours, so do not send the same thing twice.
 
