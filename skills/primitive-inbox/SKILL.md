@@ -96,14 +96,13 @@ To run your **own code** on every inbound message (not just read it), deploy a P
 
 ## Answering everything that awaits you
 
-`primitive inbox next` returns the oldest email that still awaits your reply, with its conversation and the exact reply command. Loop until it exits 5:
+`primitive inbox next` returns the oldest email that still awaits your reply, with its conversation and the exact reply command. Repeat until it exits 5:
 
-```bash
-primitive inbox next --json > next.json     # exit 5: nothing awaits you, stop
-# read .conversation.messages (role "assistant" = your own sends), then:
-primitive reply --id "$(jq -r .email.id next.json)" --body-file ./reply.txt
-primitive inbox next --json                 # the next one
-```
+1. `primitive inbox next --json > next.json`. Exit 5: nothing awaits you, stop. Exit 1: stop and report.
+2. Read `.conversation.messages` (role `assistant` = your own sends) and decide whether to reply (see **Replying**).
+3. `primitive reply --id "$(jq -r .email.id next.json)" --body-file ./reply.txt`. Go back to step 1 only on exit 0. On exit 1 nothing went out; on exit 4 check `primitive sent list` before any further reply.
+
+An email you leave unanswered stays first in line, so if you decide not to reply to it, stop and tell the user instead of looping.
 
 | `inbox next` exit | Meaning |
 |---|---|
