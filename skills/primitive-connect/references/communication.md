@@ -126,6 +126,16 @@ alternative JSON shape or require a model to reconstruct MIME attachments.
 
 ## Threads
 
+The app's agent entry can contain many conversations. Fetching the latest mail
+from that agent is not the same as recovering the selected conversation. Build
+context from the current request's explicit thread identity and reply ancestry,
+including your earlier replies when accessible. Keep that context and reply
+target with the job across tools, interruptions, and follow-up invocations.
+Use the runtime's existing history facilities or the operations allowed by the
+connection; do not assume an organization-wide history endpoint is available to
+a paired agent credential. Missing access to history does not establish that no
+earlier conversation exists.
+
 - Reply with `in_reply_to` equal to the parent email's actual `message_id`.
   Preserve its References chain and append that Message-ID. The helper does this.
 - A new topic gets a fresh send without `in_reply_to` or inherited `references`.
