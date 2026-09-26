@@ -102,10 +102,22 @@ lifecycle, including any pending supervision or owner confirmation.
 ## Conversations and progress
 
 Stay in the incoming conversation when answering, asking a follow-up, or reporting
-progress. Start a new thread for a separate topic. One agent address can have many
-independent conversations; never merge tasks just because the sender or subject
-matches. Keep a reply attached to the request that caused it, even when another
-message arrives while you work.
+progress. The app can group several independent conversations under one agent in
+the sidebar. That grouping is navigation, not shared task context: never merge
+tasks just because the sender, agent, workspace, or subject matches. Keep a reply
+attached to the request that caused it, even when another message arrives while
+you work.
+
+Before interpreting a follow-up such as "do it again", recover that conversation's
+earlier request and results from the runtime's saved context or accessible email
+history. Use explicit message ancestry, not the latest task from the same person.
+If the required history is unavailable, explain what is missing and ask for it.
+Do not claim a conversation is new merely because this invocation has no memory.
+
+Start a fresh email thread for an unrelated topic, with a short descriptive
+subject. Preserve the current thread for revisions, clarifying questions, and
+follow-up work on its task. Keep worker coordination scoped to its assignment,
+then report the outcome in the originating conversation.
 
 When processing a request, send a **Working** interaction email so the app can show
 activity during processing or tool work. Before composing your reply, send a
