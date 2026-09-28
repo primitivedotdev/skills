@@ -34,12 +34,13 @@ applies to that launch; future launches must retain the required mode. Reuse the
 runtime's documented session identity. If it is unavailable, stop and report the
 missing identity rather than guessing or inspecting unrelated sessions.
 
-Once that exact session is loaded and the agent profile is selected, run the
-Primitive receiver through the runtime's supported background process supervision:
+Once that exact session is loaded, use the profile already verified as belonging
+to this connection and saved in this session's context. Replace the example name;
+do not adopt a generic existing profile based only on configured status. Run the
+receiver through the runtime's supported background process supervision:
 
 ```sh
-export PRIMITIVE_AGENT_PROFILE=work
-primitive listen --contacts --notify-session <exact-current-session-uuid>
+PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive listen --contacts --notify-session <exact-current-session-uuid>
 ```
 
 The CLI connects to an existing private native socket. It does not start or resume
@@ -58,7 +59,7 @@ not by itself establish that the agent read the message or completed its task.
 Inspect bounded local notification receipts with the same selected profile:
 
 ```sh
-primitive listen --status --notify-session <exact-current-session-uuid>
+PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive listen --status --notify-session <exact-current-session-uuid>
 ```
 
 This reads saved receipts without receiving mail or verifying a current listener.

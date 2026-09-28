@@ -38,36 +38,53 @@ wake support. Do not read a credential file to migrate between these paths.
 
 ## Claim privately and resume safely
 
-Choose a stable local profile name for this agent connection. Check it before
-claiming, including after a restart:
+For a fresh copied invitation, choose a unique local profile for this connection
+and coding session. Do not reuse a generic name such as `work` merely because
+its offline status says configured: that profile may belong to another session,
+and an invitation need not disclose the assigned address. Replace
+`connection-session-unique` below with the chosen name and save that name with
+this session's context, never the invitation secret.
+
+Check the candidate profile without reading private credential files:
 
 ```sh
-primitive agent connect --profile work --status --json
-export PRIMITIVE_AGENT_PROFILE=work
+primitive agent connect --profile connection-session-unique --status --json
 ```
 
-This is an offline identity check, not proof that the credential is still valid
-or that a listener is receiving. A configured profile returns its assigned agent
-address, owner address, organization and API origin without the credential. Keep
-this identity with the task and verify that it matches the intended connection.
-Do not overwrite a configured profile for a different owner or organization.
+Offline status reports saved identity only. It does not establish that the profile
+matches a newly supplied invitation, that the credential is valid, or that a
+listener is receiving. If this is a fresh invitation and the candidate profile is
+already configured, choose another unused name; never skip the claim based on
+that status or silently overwrite the existing profile.
 
-For a new profile, pipe only the setup URL or the supported JSON invitation from
-a private file/input. Keep the secret out of shell history and process arguments:
+Pipe only the setup URL or supported JSON invitation from private input. Keep the
+secret out of shell history and process arguments:
 
 ```sh
-primitive agent connect --profile work < <private-invitation-file>
-export PRIMITIVE_AGENT_PROFILE=work
+primitive agent connect --profile connection-session-unique < <private-invitation-file>
 ```
 
-The CLI sends one claim, saves the scoped credential privately, and preserves the
-default OAuth login. The selected profile applies to subsequent commands in this
-process environment, including listener processes; another shell must select it
-explicitly. Separate profiles keep separate active chat state. Do not set a
-conflicting API key or API origin. Identical completed invitations reuse the local
-profile without another claim. An ambiguous claim or lost response needs a fresh
-owner invitation and a separate profile; never retry the old claim or display
-private profile files. The CLI does not automatically rotate an existing profile.
+The CLI journals the claim before sending it once, saves the scoped credential
+privately, and preserves the default OAuth login. A completed invitation supplied
+to its original profile is recognized by its saved hash and reused without a
+network claim. A different invitation is refused for that profile. Do not bypass
+this check or infer a match from a shared owner or organization. An ambiguous
+claim or lost response needs a fresh owner invitation and a separate profile;
+never retry the old claim. The CLI does not automatically rotate profiles.
+
+On restart, reuse a profile only when this session's saved context identifies it
+as this connection, and check its offline identity against that context. If the
+same completed invitation is available, `agent connect` can verify its saved
+hash locally without reclaiming. If neither saved session context nor that proof
+establishes the match, use a new profile for a fresh invitation rather than
+adopting an unrelated configured identity.
+
+Select the verified profile for each authenticated command. Prefer the
+`PRIMITIVE_AGENT_PROFILE=connection-session-unique` prefix shown below when shell
+tool invocations do not preserve environment exports. An `export` is sufficient
+only within a shell whose environment persists, including any listener child it
+starts. Another shell must select the profile explicitly. Separate profiles keep
+separate active chat state. Do not set a conflicting API key or API origin.
 
 Pin the returned organization, agent address and owner address. Preserve an existing
 verified owner policy. Resolve conflicting owner information through the original
@@ -89,7 +106,7 @@ exact marker to that inbound record using the selected profile's current
 credential. The CLI derives threading from the received email record:
 
 ```sh
-primitive reply --id <received-email-id> --body-file <private-marker-file>
+PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive reply --id <received-email-id> --body-file <private-marker-file>
 ```
 
 Keep the send result. Queued is accepted for delivery, not a reason to resend.
@@ -113,9 +130,9 @@ are useful even with notifications off; new memberships default to off. When
 ongoing notifications are authorized, use the selected agent's own membership:
 
 ```sh
-primitive agent contacts list
-primitive agent contacts add person@example.com --purpose "Project coordination" --notify
-primitive agent contacts update person@example.com --no-notify
+PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive agent contacts list
+PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive agent contacts add person@example.com --purpose "Project coordination" --notify
+PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive agent contacts update person@example.com --no-notify
 ```
 
 For an existing membership use `update --notify`; do not turn notifications on
@@ -129,7 +146,7 @@ Where installed help supports the native session adapter, start one supervised
 receiver with the selected profile and the real loaded session UUID:
 
 ```sh
-primitive listen --contacts --notify-session <exact-session-uuid>
+PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive listen --contacts --notify-session <exact-session-uuid>
 ```
 
 Do not guess a session UUID, launch a replacement session, or install another
@@ -139,8 +156,8 @@ notifications. Wait for `Listening for session notifications...` before requesti
 a fresh test message. Enable the exact sender's notification preference before
 they send: messages received before the server's `notify_since` time are not
 replayed when notifications are later enabled. The setup challenge is handled by
-targeted search and a manual reply, not by retroactively enabling notifications. A live process must remain supervised; an event printed to stdout
-alone does not wake a model. [Native session setup](references/native-session.md)
+targeted search and a manual reply, not by retroactively enabling notifications.
+A live process must remain supervised; an event printed to stdout alone does not wake a model. [Native session setup](references/native-session.md)
 contains the conditional runtime prerequisites and readiness checks. Unsupported
 harnesses must report their actual receiving and wake limits.
 
@@ -149,7 +166,7 @@ harnesses must report their actual receiving and wake limits.
 With the profile selected, send a question and await its authenticated reply:
 
 ```sh
-primitive chat person@example.com < <private-question-file>
+PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive chat person@example.com < <private-question-file>
 ```
 
 The CLI uses the pinned sending identity. An exact-parent reply wait does not
@@ -157,7 +174,7 @@ require a contact notification opt-in. For a timed-out wait or a later resume,
 wait on the existing send instead of sending again:
 
 ```sh
-primitive emails wait --reply-to-sent-email-id <sent-email-id> --from person@example.com
+PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive emails wait --reply-to-sent-email-id <sent-email-id> --from person@example.com
 ```
 
 Connected waits share the address receiver and recover only replies to that exact
