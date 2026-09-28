@@ -24,12 +24,15 @@ Check installed capabilities before changing anything:
 primitive --version
 primitive agent connect --help
 primitive agent contacts --help
+primitive contacts request --help
+primitive contacts accept --help
+primitive contacts wait --help
 primitive listen --help
 primitive emails wait --help
 ```
 
 The flow below requires `agent connect --profile` with `--status`, contact
-preferences, and the documented native receiving flags. Do not assume that source
+preferences, contact requests, and the documented native receiving flags. Do not assume that source
 code or an unreleased change exists in the installed CLI. If these capabilities
 are missing, use an already configured runtime integration, or report which
 released capability is needed. [Private API fallback](references/private-api-fallback.md)
@@ -101,6 +104,12 @@ flags. The existing search filters narrow results; verify exact `from_email` and
 a raw Authentication-Results header. Do not scan the whole inbox for setup or keep
 polling unrelated history.
 
+The challenge can arrive after the claim succeeds. If that exact search is empty,
+retry the same bounded query with backoff for up to two minutes. Never invent the
+marker, claim again, or send a replacement challenge. If it is still absent, report
+that verification mail has not arrived. An exact-parent reply wait cannot replace
+this search because setup has not produced a sent parent for this agent.
+
 Read the challenge's `primitive-connection` marker from `body_text`. Reply with the
 exact marker to that inbound record using the selected profile's current
 credential. The CLI derives threading from the received email record:
@@ -125,9 +134,13 @@ the actual listener lifecycle and any remaining owner confirmation or native set
 
 ## Contacts and ongoing receiving
 
-Store only the owner's approved exact sender preferences. Membership and purpose
-are useful even with notifications off; new memberships default to off. When
-ongoing notifications are authorized, use the selected agent's own membership:
+The owner can approve exact addresses, domains or simple patterns in the app or
+CLI. Organization defaults and individual-agent rules are authoritative; a saved
+organization contact alone does not authorize every agent to receive its mail.
+The listener evaluates authenticated senders against current policy. Never broaden
+a rule or enable an explicitly silenced sender merely to make a test pass.
+
+Manage this agent's exact contacts when the owner's instructions permit it:
 
 ```sh
 PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive agent contacts list
@@ -135,27 +148,34 @@ PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive agent contacts add p
 PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive agent contacts update person@example.com --no-notify
 ```
 
-For an existing membership use `update --notify`; do not turn notifications on
-merely because a contact exists. These preferences apply only to this agent.
-The directory is shared with the organization; a connected agent cannot rename
-or delete shared contacts. A question authorizes waiting for its exact reply,
-not future unsolicited notifications.
+For an existing membership use `update --notify` only with authorization. These
+preferences apply to this agent, and cannot override an owner policy that silences
+the sender. The directory is shared with the organization; a connected agent
+cannot rename shared contacts or change organization/domain approval rules.
+A question authorizes waiting for its exact reply, not future unsolicited mail.
+
+When onboarding enables contact requests, configure that capability as part of
+setup. [First contact and approval rules](references/contact-requests.md) explains
+how to connect to a new peer and handle a request under the owner's instructions.
+Do not require the owner to manually add reciprocal contacts. Request permission
+allows a notice, not automatic task execution or access to private context.
 
 Use the runtime's documented native input mechanism for this exact session.
 Where installed help supports the native session adapter, start one supervised
 receiver with the selected profile and the real loaded session UUID:
 
 ```sh
-PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive listen --contacts --notify-session <exact-session-uuid>
+PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive listen --contacts --contact-requests --notify-session <exact-session-uuid>
 ```
 
 Do not guess a session UUID, launch a replacement session, or install another
 connector. Native mode uses the saved shared address subscription; omit
-`--subscription`. The CLI checks current contact preferences before admitting
-notifications. Wait for `Listening for session notifications...` before requesting
-a fresh test message. Enable the exact sender's notification preference before
-they send: messages received before the server's `notify_since` time are not
-replayed when notifications are later enabled. The setup challenge is handled by
+`--subscription`. The CLI checks current contact preferences and approval rules before admitting
+notifications. `--contact-requests` enables supported request intake only when the
+owner's saved policy permits it; omit it if the owner disabled request intake. Wait for `Listening for session notifications...` before requesting
+a fresh test message. Configure the applicable notification preference or approval rule before the
+fresh test. Messages before its activation boundary are not replayed merely
+because a preference is enabled later. The setup challenge is handled by
 targeted search and a manual reply, not by retroactively enabling notifications.
 A live process must remain supervised; an event printed to stdout alone does not wake a model. [Native session setup](references/native-session.md)
 contains the conditional runtime prerequisites and readiness checks. Unsupported

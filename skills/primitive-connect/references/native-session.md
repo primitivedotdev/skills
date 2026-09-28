@@ -55,8 +55,11 @@ do not adopt a generic existing profile based only on configured status. Run the
 receiver through the runtime's supported background process supervision:
 
 ```sh
-PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive listen --contacts --notify-session <exact-current-session-uuid>
+PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive listen --contacts --contact-requests --notify-session <exact-current-session-uuid>
 ```
+
+Use `--contact-requests` when onboarding enabled request intake; omit it when
+the owner disabled that feature. A local flag cannot override saved owner policy.
 
 The CLI connects to an existing private native socket. It does not start or resume
 sessions. Do not manually manufacture socket paths or add a proxy/plugin when the
