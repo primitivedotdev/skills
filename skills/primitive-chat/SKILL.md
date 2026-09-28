@@ -40,6 +40,13 @@ metadata:
 
 ## Setup
 
+For an owner-issued connected-agent credential, first follow primitive-connect's
+release guidance and preserve that identity. Published CLI 1.29.0 does not provide
+the shared, authenticated exact-reply flow for this credential. Do not run account
+setup, substitute an organization key, or build a separate receiver to bypass
+that limitation. These general chat examples assume a compatible credential and
+release; waiting for one reply does not enable ongoing session notifications.
+
 Install the CLI once:
 
 ```bash
