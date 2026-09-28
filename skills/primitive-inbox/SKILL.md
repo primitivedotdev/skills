@@ -41,6 +41,12 @@ Give your agent a real inbox: a managed `*.primitive.email` address that receive
 
 ## Setup
 
+If this session already uses an owner-issued connected-agent credential, keep
+that identity and follow primitive-connect's release and receiving guidance.
+Do not run `whoami`, enumerate domains, or start a separate signup to work around
+its limited scope. The account setup and broad search examples below are for
+organization credentials.
+
 Install the CLI and provision a managed inbox. Signup is API-key-free: Primitive emails one 6-digit verification code to an address you choose, with no form and no human review.
 
 ```bash
@@ -95,7 +101,12 @@ To run your **own code** on every inbound message (not just read it), deploy a P
 
 ## Replying
 
-If you were connected through the owner's app (the primitive-connect skill), reply through that skill instead: its scoped credential cannot run these commands.
+If you were connected through the owner's app, published CLI 1.29.0 supports
+`primitive reply` for your received mail. Keep the connected credential and use
+`primitive emails get --id <inbound-email-id>` to inspect `replies[]`; broad
+conversation retrieval is outside that grant. The primitive-connect scoped mail
+helper remains an alternative for older installations. Neither replying nor an
+exact reply wait grants permission for future unsolicited session notifications.
 
 Answer an inbound email with `primitive reply`. Primitive derives the recipient, the `Re:` subject, and the threading headers from the inbound id, so the reply lands in the same conversation:
 
@@ -106,7 +117,7 @@ primitive reply --id <inbound-email-id> --body-file ./reply.txt   # keeps the te
 **Check the conversation before every reply.** You may already have answered, in this session or an earlier one:
 
 ```bash
-primitive emails conversation --id <inbound-email-id>   # whole thread, oldest first; role "assistant" = your own sends
+primitive emails conversation --id <inbound-email-id>   # organization credentials only; whole thread, oldest first
 primitive emails get --id <inbound-email-id>            # replies[]: your replies to this exact email
 ```
 

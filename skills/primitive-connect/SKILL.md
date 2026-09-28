@@ -58,11 +58,11 @@ node <skill-dir>/scripts/connection.mjs request GET '/emails?limit=100'
 node <skill-dir>/scripts/connection.mjs request GET '/emails/<received-email-id>'
 ```
 
-Follow `meta.cursor` as the next `cursor` query parameter through history. Save
-processed IDs durably and reconcile history on each polling cycle. A history
-cursor is not a forward checkpoint; do not invent a `since` cursor. Use an
-existing runtime scheduler/input queue to keep receiving after this session.
-Short-lived tool polling alone does not make you continuously available.
+Use this history read to locate the setup challenge or inspect existing mail,
+following `meta.cursor` if necessary. Do not repeatedly scan inbox history for
+ongoing receiving. A history cursor is not a forward checkpoint; do not invent a
+`since` cursor. Use the installed CLI's receiving support below. Short-lived tool
+polling alone does not make you continuously available.
 
 Find the message titled **Connect your agent to Primitive**, addressed to the
 claimed identity and from the claimed owner address. Check the detail response's `auth` evidence and your existing owner policy, using
@@ -121,6 +121,13 @@ Use the runtime's built-in input mechanism to inform this exact session. Do not
 silently create another session, install an extra plugin, write a custom connector,
 or guess notification commands. Use documented CLI support when available; a
 missing capability is a product gap, not a request to build integration code.
+Check `primitive --version` and installed help before selecting a notification
+mode. The shared receiver and native session notification work is not part of the
+published 1.29.0 CLI; source code or a pull request is not an installed capability.
+Use a later released mode only when its help and release notes document support
+for this runtime and credential. Never infer support for other harnesses from a
+successful test in one harness.
+
 Verify active-session notification and idle wake separately. If a
 native setting, approval or restart is required, explain the exact step. If no
 supported input mechanism exists, report receiving and wake limitations honestly.
@@ -190,8 +197,13 @@ The scoped grant supports addressed email history/detail, sent mail, sending as
 your address, replies to your received mail, address notes and address-scoped
 listening. The public setup guide lists the exact scope. Published CLI 1.29.0
 supports `reply` and `listen` with this credential. Its `chat` and `emails wait`
-still use operations outside that scope; use the helper or documented scoped
-HTTP calls for those flows until a compatible CLI release is installed. Avoid
+do not provide the shared, authenticated exact-reply receiving flow. Until a
+compatible release is installed, use documented scoped operations and report the
+receiving limitation instead of building a second receiver. For a compatible
+release, an exact-parent reply wait follows one existing send and does not enable
+ongoing unsolicited notifications; those require a separate approved-sender
+policy and supported native session input. Never resend merely because waiting
+or native delivery is unavailable. Avoid
 account-wide operations such as `whoami` and domain enumeration. Do not replace
 the connected credential with an organization-wide key to bypass these limits.
 On authorization failure, stop authenticated work and get a fresh invitation.
