@@ -16,7 +16,22 @@ codex --version
 codex --help
 codex resume --help
 codex features list
+codex app-server daemon version
 ```
+
+`codex app-server daemon version` is a read-only check that reports local CLI and
+running server versions. Check the actual shared-server connection as well as the
+flag: compatible CLI/server versions are required. In a demonstrated mismatch,
+CLI 0.156.1 fell back to a standalone session against a managed 0.157.1 server.
+Matching CLI 0.157.1 allowed native adapter preflight for two fresh sessions; that
+preflight alone did not verify email delivery or idle wake.
+
+If the launch reports fallback to standalone, a version mismatch, or an unavailable
+shared server, do not claim native receiving is ready. Use the runtime's standard
+upgrade/reopen path to get compatible versions and reopen the same exact session.
+Explain any required owner action before an upgrade that could interrupt other
+work; do not restart a shared server or add a custom connector merely to bypass
+the mismatch.
 
 This notification adapter requires the exact session to be loaded in the native
 shared local server. An ordinary terminal session without that support is not
