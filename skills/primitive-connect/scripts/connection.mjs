@@ -42,7 +42,7 @@ async function writePrivate(path, value) {
 }
 function invitationToken(instruction) {
   const matches = instruction.match(/https:\/\/api\.primitive\.dev\/v1\/agent-connections\/setup[^\s<>"']*/g);
-  if (matches?.length !== 1) fail('Supply one owner-provided setup URL or copied instruction on stdin.');
+  if (matches?.length !== 1) fail('This helper accepts one production setup URL at api.primitive.dev on stdin. For staging, use a CLI that supports the invitation origin.');
   const url = new URL(matches[0]);
   const fragment = new URLSearchParams(url.hash.slice(1));
   const token = fragment.get('token');
@@ -67,7 +67,8 @@ function summary(state) {
     owner_address: state.owner_address,
     org_id: state.org_id,
     credential_saved: true,
-    verification: 'Confirm with the owner app after replying using this credential.',
+    verification: 'not_checked',
+    guidance: 'This is saved identity only. Report the verification reply send result separately from pairing evidence; an app check is not required for ordinary setup.',
   };
 }
 async function call(fetcher, url, options) {

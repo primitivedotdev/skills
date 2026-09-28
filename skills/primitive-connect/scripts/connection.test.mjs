@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -32,6 +32,7 @@ test('claims through POST and stores a private credential without returning it',
     return response(state);
   } });
   assert.equal(result.address, state.connection.address);
+  assert.equal(result.verification, 'not_checked');
   assert.equal(JSON.stringify(result).includes(secret), false);
   assert.equal(JSON.stringify(result).includes(token), false);
   assert.deepEqual(JSON.parse(await readFile(join(directory, 'connection.json'), 'utf8')), {
@@ -39,6 +40,27 @@ test('claims through POST and stores a private credential without returning it',
   });
   assert.equal((await stat(join(directory, 'connection.json'))).mode & 0o777, 0o600);
   assert.equal((await stat(directory)).mode & 0o777, 0o700);
+});
+
+test('staging invitations are refused before any claim or claim journal is created', async t => {
+  const directory = await sandbox(t);
+  const input = instruction.replace('api.primitive.dev', 'api.primitive-staging-1.com');
+  await assert.rejects(run(['claim'], { directory, input,
+    fetcher: async () => assert.fail('A staging invitation must never be sent to production'),
+  }), /production/);
+  assert.deepEqual(await readdir(directory), []);
+});
+
+test('offline status does not claim pairing verification or call the network', async t => {
+  const directory = await sandbox(t);
+  await claim(directory);
+  const result = await run(['status'], { directory,
+    fetcher: async () => assert.fail('Offline status must not contact the API'),
+  });
+  assert.equal(result.address, state.connection.address);
+  assert.equal(result.credential_saved, true);
+  assert.equal(result.verification, 'not_checked');
+  assert.equal(JSON.stringify(result).includes(secret), false);
 });
 
 test('rejects a lost claim retry without another network request', async t => {
