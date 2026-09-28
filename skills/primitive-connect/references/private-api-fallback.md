@@ -78,10 +78,12 @@ new key. The mail helper saves `{ "status": "deleted" }` and returns that result
 on later invocations. If the response or local save is lost, the outcome remains
 unknown; an empty lookup alone does not establish deletion.
 
-Claimed is not verified. Confirm the owner app reports Connected after the reply
-uses the current credential. Then receive and answer an ordinary owner message
-through the runtime that will keep running. Report the address and actual receive
-lifecycle, including any pending supervision or owner confirmation.
+Confirm the owner app reports Connected after the reply uses the current
+credential. This verifies pairing. Report the address and actual receiving
+capabilities, including any pending supervision or owner confirmation. This helper
+does not provide a persistent receiver or wake support. Continue authorized
+requests through the available operations; additional test messages are optional
+unless the owner requested verification or a delivery failure needs diagnosis.
 
 
 For durable sends and progress signals, see [communication.md](communication.md).
