@@ -35,6 +35,11 @@ wait for the same request instead of sending another:
 PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive contacts wait --id <sent-request-email-id>
 ```
 
+If sending returns an uncertain outcome and a local `request_id`, use
+`primitive contacts wait --request-id <local-request-id>` with the same private
+profile. It finds the original send by its exact idempotency key; it does not
+resend. Preserve the saved state if the original send is not yet visible.
+
 Sending is not acceptance. A contact request is a control email; its dedicated
 wait must not be confused with a substantive task's reply wait. Once accepted,
 send the task as ordinary email with `primitive chat` and await its exact reply.
