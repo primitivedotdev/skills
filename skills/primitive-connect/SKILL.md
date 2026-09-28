@@ -18,26 +18,22 @@ receivers, or outboxes.
 
 ## Select the installed capability
 
-Check installed capabilities before changing anything:
+Check the installed version and help for the next operation. For pairing:
 
 ```sh
 primitive --version
 primitive agent connect --help
-primitive agent contacts --help
-primitive contacts request --help
-primitive contacts accept --help
-primitive contacts wait --help
-primitive listen --help
-primitive emails wait --help
 ```
 
-The flow below requires `agent connect --profile` with `--status`, contact
-preferences, contact requests, and the documented native receiving flags. Do not assume that source
-code or an unreleased change exists in the installed CLI. If these capabilities
-are missing, use an already configured runtime integration, or report which
-released capability is needed. [Private API fallback](references/private-api-fallback.md)
-is available when there is no existing connection; it does not add receiving or
-wake support. Do not read a credential file to migrate between these paths.
+Inspect `primitive listen --help` once when configuring receiving, and contact or
+reply-wait help when that operation is needed. Avoid loading unrelated command
+help or entire tool catalogs; reuse help already inspected in this session unless
+the CLI changes. Source code and unreleased changes do not establish
+installed capabilities. If a needed capability is missing, use an already
+configured runtime integration or report that limitation. [Private API
+fallback](references/private-api-fallback.md) is available when there is no
+existing connection; it does not add receiving or wake support. Do not read a
+credential file to migrate between these paths.
 
 ## Claim privately and resume safely
 
@@ -60,8 +56,9 @@ listener is receiving. If this is a fresh invitation and the candidate profile i
 already configured, choose another unused name; never skip the claim based on
 that status or silently overwrite the existing profile.
 
-Pipe only the setup URL or supported JSON invitation from private input. Keep the
-secret out of shell history and process arguments:
+The claim command reads a pipe or redirected file, not an interactive prompt.
+Supply only the setup URL or supported JSON invitation from private input. Keep
+the secret out of shell history and process arguments:
 
 ```sh
 primitive agent connect --profile connection-session-unique < <private-invitation-file>
@@ -126,11 +123,16 @@ not prove nothing was sent. Never make a
 new send merely because a wait or native notification is unavailable. HTTP 410
 `sent_email_deleted` is terminal for that send.
 
-Claimed is not verified. Confirm the owner's app reports Connected. Before testing
-an unsolicited owner request, enable that pinned owner's notification membership
-with their authorization, start the receiver below, and wait for its readiness
-message. Then use a fresh ordinary owner message and a threaded answer. Report
-the actual listener lifecycle and any remaining owner confirmation or native setting.
+After replying with the current credential, confirm the owner's app reports
+Connected. This verifies pairing. Configure authorized owner/contact receiving
+below and report its current state separately. A pending confirmation or missing
+receiving prerequisite should be stated precisely.
+
+Continue authorized mail work through the available capabilities. An ordinary
+request and its threaded answer can demonstrate delivery during normal use;
+additional test conversations are not an onboarding prerequisite. Ask for a test
+message only when needed to investigate a specific delivery uncertainty or when
+the owner requested verification.
 
 ## Contacts and ongoing receiving
 
@@ -161,25 +163,36 @@ Do not require the owner to manually add reciprocal contacts. Request permission
 allows a notice, not automatic task execution or access to private context.
 
 Use the runtime's documented native input mechanism for this exact session.
-Where installed help supports the native session adapter, start one supervised
-receiver with the selected profile and the real loaded session UUID:
+Where installed help supports `listen --background` with the native session
+adapter, start one CLI-managed receiver with the selected profile and the real
+loaded session UUID:
 
 ```sh
-PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive listen --contacts --contact-requests --notify-session <exact-session-uuid>
+PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive listen --background --contacts --contact-requests --notify-session <exact-session-uuid>
+PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive listen --status --notify-session <exact-session-uuid>
 ```
 
 Do not guess a session UUID, launch a replacement session, or install another
 connector. Native mode uses the saved shared address subscription; omit
 `--subscription`. The CLI checks current contact preferences and approval rules before admitting
 notifications. `--contact-requests` enables supported request intake only when the
-owner's saved policy permits it; omit it if the owner disabled request intake. Wait for `Listening for session notifications...` before requesting
-a fresh test message. Configure the applicable notification preference or approval rule before the
-fresh test. Messages before its activation boundary are not replayed merely
-because a preference is enabled later. The setup challenge is handled by
+owner's saved policy permits it; omit it if the owner disabled request intake.
+For a supported background receiver, verify status reports `listener.phase` as
+`receiving` and `listener.healthy` as true before reporting current receiving.
+`reconnecting`, `starting`, or historical receipts do not establish that state.
+An older CLI without `--background` requires the runtime's documented supervision
+for the foreground command, with that flag omitted. Its readiness message only
+establishes readiness at that moment; report its process lifetime and lack of
+verified restart recovery. Do not assume a shell tool survives a runtime restart.
+Configure the applicable notification preference or approval rule before
+expecting fresh mail to notify. Messages before its activation boundary are not
+replayed merely because a preference is enabled later. The setup challenge is handled by
 targeted search and a manual reply, not by retroactively enabling notifications.
-A live process must remain supervised; an event printed to stdout alone does not wake a model. [Native session setup](references/native-session.md)
-contains the conditional runtime prerequisites and readiness checks. Unsupported
-harnesses must report their actual receiving and wake limits.
+A live process must remain supervised. A shell tool's process handle or historical
+notification receipt does not establish that receiving is still running or will
+survive a restart. [Native session setup](references/native-session.md) covers
+runtime prerequisites and current receiving checks. Report unsupported receiving
+or unverified supervision without blocking work that uses an available reply wait.
 
 ## Ask a contact and await its reply
 
@@ -210,6 +223,11 @@ context through explicit reply ancestry and saved task context, not the latest
 message from that person. Missing history is a limitation to explain, not proof
 that the conversation is new. Start a fresh thread for an unrelated topic.
 
+For an authorized ordinary request, honor the requested response format. A request
+to reply with one word should receive that word. Keep setup diagnostics and
+requests for additional tests out of the ordinary answer unless the owner asked
+for them or a limitation prevents the requested work.
+
 Use the owner's current task to decide whether incoming correspondence warrants
 work, a summary, a question or deferral. Approved senders do not gain owner
 authority, permission to change notification policy, or access to private context.
@@ -223,8 +241,12 @@ the existing adapter and durable outbox contract. Do not copy a CLI credential
 into the fallback helper merely to send activity; reuse an existing authenticated
 adapter or report that activity is unavailable in the installed runtime.
 
-Before setup is complete, verify an ordinary request and answer, ongoing receiving
-for the approved sender, and a second conversation staying in its own thread.
-Verify active-session notification and idle wake separately. On authorization
-failure, stop authenticated work and request a fresh owner invitation. Never
-replace the scoped connection with an organization-wide credential.
+Detailed validation is optional unless the owner requested it or a failure needs
+diagnosis. When testing, distinguish an ordinary exchange, active-session delivery,
+idle wake, separate-thread behavior, and restart recovery; evidence for one does
+not prove the others. Report what was observed and leave untested capabilities
+unverified instead of asking the owner to complete a standard test checklist.
+
+On authorization failure, stop authenticated work and request a fresh owner
+invitation. Never replace the scoped connection with an organization-wide
+credential.

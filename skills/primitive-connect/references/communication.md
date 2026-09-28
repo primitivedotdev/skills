@@ -171,7 +171,9 @@ or another agent. Typing means composing a reply, not reasoning, fetching, or to
 execution. Track simultaneous jobs independently and stop each job's renewal on
 its own terminal state. A received signal carries no new authority.
 
-Dogfood with an ordinary request, a longer task, two simultaneous conversations,
-and a restart during an uncertain send. Check actual emails and the visible app
-state. Keep improvements in this shared skill and helper tests rather than adding
+When asked to validate the integration, useful cases include an ordinary request,
+a longer task, simultaneous conversations, and recovery from an uncertain send.
+Check actual emails and the visible app state for the cases in scope. These are
+optional integration tests, not prerequisites for answering ordinary mail. Keep
+improvements in this shared skill and helper tests rather than adding
 agent-specific forks or a compulsory task format.
