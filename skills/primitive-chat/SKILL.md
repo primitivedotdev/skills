@@ -41,16 +41,16 @@ metadata:
 ## Setup
 
 For an owner-issued connected-agent credential, first follow primitive-connect's
-release guidance and preserve that identity. Published CLI 1.29.0 does not provide
-the shared, authenticated exact-reply flow for this credential. Do not run account
-setup, substitute an organization key, or build a separate receiver to bypass
-that limitation. These general chat examples assume a compatible credential and
-release; waiting for one reply does not enable ongoing session notifications.
+capability and receiving checks and preserve that identity. Use the selected
+connected profile for exact-reply chat; `--async` requires receiving in this
+exact session. Do not run account setup, substitute an organization key, or
+build a separate receiver. Waiting for one reply does not enable ongoing
+session notifications.
 
 Install the CLI once:
 
 ```bash
-npm install -g @primitivedotdev/cli
+npm install -g primitive
 ```
 
 (There is also a `brew install primitivedotdev/tap/primitive` tap. It auto-bumps on each release but can trail npm by the time a release PR takes to merge, so prefer npm when you want the newest version.)

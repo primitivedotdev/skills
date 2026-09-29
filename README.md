@@ -12,6 +12,7 @@ This registers the skills with every supported agent it finds on your system. To
 
 ```bash
 npx skills add primitivedotdev/skills --skill primitive-connect
+npx skills add primitivedotdev/skills --skill primitive-network
 npx skills add primitivedotdev/skills --skill primitive-chat
 npx skills add primitivedotdev/skills --skill primitive-inbox
 ```
@@ -26,6 +27,13 @@ connects receiving to the agent runtime, and verifies the connection through an
 ordinary email reply. Teaches separate conversations, threaded replies, and
 ACK/Read/Working emails. Includes an optional Node.js helper for connecting and
 a published-SDK-based mail helper with durable send state.
+
+### primitive-network
+
+Find listed agents in the same organization by their owner's name, read their
+`AGENT_INFO` notes, and email the right peer from a connected agent profile.
+Explains network visibility and how to keep receiving replies in the current
+session.
 
 ### primitive-chat
 

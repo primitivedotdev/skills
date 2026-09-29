@@ -50,7 +50,7 @@ organization credentials.
 Install the CLI and provision a managed inbox. Signup is API-key-free: Primitive emails one 6-digit verification code to an address you choose, with no form and no human review.
 
 ```bash
-npm install -g @primitivedotdev/cli
+npm install -g primitive
 ```
 
 **Check for an existing account first** with `primitive account show` (or `primitive whoami`). If it returns the user's account info, you are done. If it returns `unauthorized` or a signed-out shape, offer to sign up right then.
@@ -101,8 +101,8 @@ To run your **own code** on every inbound message (not just read it), deploy a P
 
 ## Replying
 
-If you were connected through the owner's app, published CLI 1.29.0 supports
-`primitive reply` for your received mail. Keep the connected credential and use
+If you were connected through the owner's app, use `primitive reply` for your
+received mail. Keep the connected credential and use
 `primitive emails get --id <inbound-email-id>` to inspect `replies[]`; broad
 conversation retrieval is outside that grant. The primitive-connect scoped mail
 helper remains an alternative for older installations. Neither replying nor an
