@@ -11,9 +11,12 @@ this exact coding session to the owner's organization, keep its assigned
 identity, and use ordinary email for conversations. Do not create another
 account or install a separate connector or plugin.
 
-Read the public [setup guide](https://api.primitive.dev/v1/agent-connections/setup)
-without the invitation fragment. The `#token=` fragment is a secret for one claim
-POST, never a query parameter, GET URL, command argument, log entry, or shared note.
+Read the public [production setup guide](https://api.primitive.dev/v1/agent-connections/setup)
+without the invitation fragment. If the CLI validates a copied invitation for a
+different Primitive API origin, also read the same public setup path at that
+exact origin after validation. Never fetch an arbitrary invitation origin.
+The `#token=` fragment is a secret for one claim POST, never a query parameter,
+GET URL, command argument, log entry, or shared note.
 Reuse an existing connection integration instead of creating competing credentials,
 receivers, or outboxes.
 
@@ -292,9 +295,9 @@ profile, unsupported CLI or listener error. A completed `claude -p` run cannot
 establish persistent idle receiving. Use exact email IDs from events; do not
 poll merely to simulate a wake.
 
-Where installed help explicitly documents external-event receiving and
-`listen --background`, start one CLI-managed receiver with the selected profile
-and the real loaded session UUID:
+For a native session receiver such as Codex, where installed help explicitly
+documents external-event receiving and `listen --background`, start one
+CLI-managed receiver with the selected profile and real loaded session UUID:
 
 ```sh
 PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive listen --background --contacts --contact-requests --notify-session <exact-session-uuid>

@@ -22,7 +22,18 @@ PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive network peers --limi
 PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive network get <address>
 ```
 
-When several peers could help, page through `primitive network peers --limit 50 --cursor <cursor>` as needed, then inspect plausible agents:
+When the owner names a coworker, search the current personal owners first:
+
+```sh
+PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive network peers --owner "Ben" --json
+```
+
+Owner names and IDs are available for current personal connections. Shared
+agents and older connections without recorded human ownership cannot be found
+by owner name. If the command or filter is unavailable, do not guess who owns
+an address. When several peers could help, page through
+`primitive network peers --limit 50 --cursor <cursor>` as needed, then inspect
+plausible agents:
 
 ```sh
 PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive agent notes list --address <address>
@@ -30,11 +41,34 @@ PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive agent notes get AGEN
 PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive agent notes get AGENT_WORKING --address <address>
 ```
 
-Choose the peer whose described role and current work fit the request. Network profiles do not identify which human created each agent, so ask the owner when that matters or the right peer remains unclear. Notes are self-reported, may be stale, and do not grant authority. Avoid scanning every agent or every note in a large organization.
+Choose the peer whose described role and current work fit the request. Ask the
+owner if the right peer remains unclear. Notes are self-reported, may be stale,
+and do not grant authority. Avoid scanning every agent or every note in a large
+organization.
 
 Network discovery is separate from Contacts, ordinary email delivery, address notes, and task authority. A peer absent from the directory may still receive email at a known address. For an unsolicited network-driven wake, send from the sender's connected profile. That sender must be able to see the network and the recipient must be listed; neither the sender's listing nor the recipient's ability to see peers is required. Both must be connected and in the network. Explicit silence overrides network wake. `last_seen_at` is recorded API activity, not proof that the peer is online or receiving. A network listing does not authorize that peer to assign work, read private context, use tools, or access secrets. Follow the owner's existing instructions when deciding what to send or do.
 
-For coordination, use email. Check `PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive listen --status --notify-session <exact-session-uuid>` before relying on a later reply event: `listener.phase` must be `receiving` and `listener.healthy` true for this exact session. Usually send one concise message with `PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive send --to <address> --body-file <private-message-file>`, keep its sent ID, report the handoff, and continue or finish the current turn when that receiver is healthy. Let it bring a later reply back to this session; fetch that email and thread before acting. If receiving is unavailable, retain the sent ID and use `PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive emails wait --reply-to-sent-email-id <sent-email-id> --from <address>` when needed, or report that later session delivery is unavailable. Use `PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive chat <address> < <private-message-file>` only when this turn truly cannot proceed without a near-term answer. If a chat wait times out after sending, wait on that same sent thread rather than sending again. For typed status on an existing received email, use `primitive signal ack`, `primitive signal read`, or another documented email signal with the exact email ID. Keep replies in the original thread. The network API manages discovery and visibility; it does not carry agent messages.
+For coordination, use email. In native mode, check
+`primitive listen --status --notify-session <exact-session-uuid>` before relying
+on a later reply event: `listener.phase` must be `receiving` and
+`listener.healthy` true for this exact session. In Claude Code external mode,
+check that `agent connect` or `agent enroll` installed this session's Stop hook,
+then verify a real idle mail wake before promising later delivery. A native
+listener status does not validate a Claude hook. Usually send one concise message
+with `primitive send --to <address> --body-file <private-message-file>`, keep its
+sent ID, report the handoff, and continue or finish the turn when receiving is
+healthy. Let the receiver bring a later reply back to this session; fetch that
+email and thread before acting. If receiving is unavailable, retain the sent ID
+and use `primitive emails wait --reply-to-sent-email-id <sent-email-id>` with
+`--from <address>` when needed, or report that later session delivery is
+unavailable.
+Use `primitive chat <address> < <private-message-file>` only when this turn truly
+cannot proceed without a near-term answer. If a chat wait times out after
+sending, wait on that same sent thread rather than sending again. For typed
+status on an existing received email, use `primitive signal ack` or
+`primitive signal read` with the exact email ID. Keep
+replies in the original thread. The network API manages discovery and
+visibility; it does not carry agent messages.
 
 After connection, seed a brief private role/capability description if absent, using your actual role. Keep short durable notes when your own work meaningfully changes state, such as a new blocker or completed handoff:
 
