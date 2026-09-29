@@ -28,38 +28,43 @@ its background receiver and check current health as described under
 [ongoing receiving](#contacts-and-ongoing-receiving). Do not repeat the claim,
 command-help tour, or test conversations.
 
-For a fresh pairing, check the installed version and connection help:
+For a fresh pairing, check the installed CLI before using the one-use invitation
+or creating an address through self-enrollment.
+Run the read-only preflight with the directory containing this `SKILL.md` as
+the working directory, not the user's project directory. Use `external` for
+Claude Code or `native` for a supported native runtime:
 
 ```sh
 primitive --version
-primitive agent connect --help
+node scripts/check-cli-capabilities.mjs --receiver external
 ```
 
-Inspect `primitive listen --help` once when configuring receiving. In Claude
-Code, confirm that it supports both `--wake` and `--hook-session`, and that
-`agent connect --help` supports `--session` and `--receiver`. If any are missing,
-update the CLI with `npm install -g primitive@latest` unless the owner supplied
-a local test build, then check again. Leave the invitation unused and report the
-prerequisite if the commands remain unavailable. Automatic receiving requires
-help describing "external mail events at tool-output authority"
-and no synthetic user messages. The presence of `--notify-session` or
-`--background` alone is insufficient. Do not enable a listener that inserts email
-as a user-authored message. Inspect contact or reply-wait help when that operation
-is needed. Reuse help already inspected in this session unless the CLI changes;
-avoid unrelated command help or entire tool catalogs. Source code and unreleased
-changes do not establish installed capabilities. If a needed capability is missing, use an already
-configured runtime integration or report that limitation. [Private API
-fallback](references/private-api-fallback.md) is available when there is no
-existing connection; it does not add receiving or wake support. Do not read a
-credential file to migrate between these paths.
+For native receiving, replace `external` with `native`. The preflight checks
+`agent connect`, `agent enroll`, `listen`, and `network peers` help from the
+`primitive` on this session's PATH. Claude's connect and enroll help must
+explicitly say they install the exact session's fail-open Stop hook; help that
+leaves hook setup to another integration fails. If preflight fails, update the
+CLI with `npm install -g primitive@latest` unless the owner supplied a local
+test build, then rerun it. Leave the invitation unused and do not create an
+address if it still fails; report the missing capability. Source code, a
+version number, and unreleased changes do not establish installed capabilities.
+Do not enable a listener that inserts
+email as a user-authored message. Inspect contact or reply-wait help when that
+operation is needed. Reuse help already inspected in this session unless the CLI
+changes; avoid unrelated command help or entire tool catalogs. If a needed
+capability is missing, use an already configured runtime integration or report
+that limitation. [Private API
+fallback](references/private-api-fallback.md) is only for an explicitly limited
+pairing, not a way around this copied app setup gate; it does not add receiving
+or wake support. Do not read a credential file to migrate between these paths.
 
 ## Claim privately and resume safely
 
-If the owner asked this session to connect without an invitation, check
-`primitive agent enroll --help`. On a machine where an organization member is
-already signed in, this command creates one address, handles its private
-invitation and email challenge, and checks the connection list. Use the
-runtime's actual loaded session UUID. For Claude Code, read
+If the owner asked this session to connect without an invitation, use the
+already checked `primitive agent enroll --help`. On a machine where an
+organization member is already signed in, this command creates one address,
+handles its private invitation and email challenge, and checks the connection
+list. Use the runtime's actual loaded session UUID. For Claude Code, read
 `CLAUDE_CODE_SESSION_ID` in its Bash tool and choose external receiving:
 
 ```sh
@@ -101,16 +106,10 @@ listener is receiving. If this is a fresh invitation and the candidate profile i
 already configured, choose another unused name; never skip the claim based on
 that status or silently overwrite the existing profile.
 
-The claim command reads a pipe or redirected file, not an interactive prompt.
-Supply only the setup URL or supported JSON invitation from private input. Keep
-the secret out of shell history and process arguments:
-
-```sh
-primitive agent connect --profile connection-session-unique < <private-invitation-file>
-```
-
-When `agent connect --help` supports `--session` and `--receiver`, use its
-integrated setup for a copied invitation. In Claude Code, read the current
+Use integrated setup for a copied invitation after the preflight passes. The
+command reads a pipe or redirected file, not an interactive prompt. Supply only
+the setup URL or supported JSON invitation from private input; keep the secret
+out of shell history and process arguments. In Claude Code, read the current
 `CLAUDE_CODE_SESSION_ID` in Bash and run:
 
 ```sh
@@ -125,9 +124,17 @@ documented native runtime, use its exact loaded session ID with native
 receiving. If setup pauses, run the returned `--resume` command; never feed the
 invitation or reply to the challenge twice. The `installed_unverified`
 externalHook status means the hook is installed, not that idle wake has been
-proved. If integrated setup is unavailable, use the claim-only command above
-and follow the manual challenge steps below; report that automatic receiving
-still needs runtime setup.
+proved.
+
+Claim-only is a mutually exclusive fallback for an explicitly limited pairing
+without integrated receiving. Do not use it to work around a failed preflight
+for the copied app setup, and never run both claim paths for one invitation.
+If that limited pairing was authorized, follow the manual challenge steps below
+and report that automatic receiving still needs runtime setup:
+
+```sh
+primitive agent connect --profile connection-session-unique < <private-invitation-file>
+```
 
 The CLI journals the claim before sending it once, saves the scoped credential
 privately, and preserves the default OAuth login. A completed invitation supplied
