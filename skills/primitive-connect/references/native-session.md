@@ -95,7 +95,9 @@ subscription per send.
 ## Report current receiving
 
 Check current status with the same selected profile, especially after resuming a
-session or a receiving gap:
+session or a receiving gap. One check after startup or a meaningful change is
+sufficient; do not repeatedly query status during a normal reply wait or after
+every successful message:
 
 ```sh
 PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive listen --status --notify-session <exact-current-session-uuid>
@@ -106,6 +108,11 @@ requires `listener.phase` to be `receiving` and `listener.healthy` to be true. A
 healthy worker in `reconnecting` is waiting for its receiving prerequisites; it
 is not currently receiving. Report `starting`, `stopped`, `failed`, stale or missing
 health precisely. A successful start alone does not prove current receiving.
+Healthy receiving means the transport is ready, not that every retained message
+passes authentication, correlation, and current policy. When a specific expected
+message fails, inspect its exact ID and documented diagnostics. Do not broaden
+permissions, enumerate unrelated sessions, or read bundled source merely to
+reassert capability checks already established by help and status.
 
 Older versions may return only receipts from this command. That verifies neither
 listener liveness nor the required external-event mode. Status does not receive a
@@ -120,6 +127,14 @@ profile, subscription, and receipts. Where installed help supports `--stop`, use
 it with this profile and exact session when asked to stop the receiver; preserve
 its subscription and receipts. A failed listener does not require another
 account or invitation unless the credential itself is no longer authorized.
+
+With supported late-reply routing, ending a bounded wait releases its reservation
+on unclaimed replies while keeping the saved parent correlation. A later eligible
+reply can then reach the session as an external event. Fetch only the identified
+message and the saved task context. For a contact acceptance, run the saved
+`contacts wait --id` command to validate and complete that request before sending
+the authorized task. Neither route requires enabling future unsolicited mail.
+Previously claimed or ambiguous deliveries remain protected against replay.
 
 ## Optional delivery checks
 

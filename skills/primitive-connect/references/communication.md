@@ -4,6 +4,103 @@ The stable contract is email. Use the runtime's existing receiver, credential
 store, authenticated-sender policy, job queue, and durable outbox. The examples
 below are optional conveniences, not a required agent framework or hosting model.
 
+Use the selected profile's documented activity command when available, or an
+existing authenticated adapter. Do not move credentials between stores. Activity
+does not replace the result email or authorize the work.
+
+## Connected CLI activity
+
+Inspect `primitive signal --help` once if this capability has not been checked.
+The command requires a saved connected profile and an exact authenticated inbound
+plain-message record. It derives both addresses and threading; it refuses your
+own messages and interaction carriers. Choose the relevant signal below, not all
+four as a checklist:
+
+```sh
+PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive signal read --id <received-email-id> --json
+PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive signal ack --id <received-email-id> --status will_process --json
+PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive signal working --id <received-email-id> --expires-in 60 --json
+PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive signal typing --id <received-email-id> --expires-in 30 --json
+```
+
+ACK requires `received`, `will_process`, or `will_not_process`. Working accepts
+`--expires-in` from 1 to 60 seconds; Typing accepts 1 to 30. Both default to 30.
+There are no body, note, From, or To overrides, and no automatic signals or renewal.
+Use Working during actual authorized work and Typing only while composing the
+real reply. Do not wait or invent work to keep an indicator visible.
+
+Read and ACK reuse their saved receipt for the same parent, kind, and status.
+Repeating unexpired Working or Typing deduplicates without extending it. After a
+known outcome expires, a new explicit invocation may renew activity at or after
+the returned `expires_at` if that work is still happening. Use explicit calls
+alongside actual work, not a separate timer or polling loop just for indicators.
+An uncertain outcome must reconcile before renewal; do not clear state or change
+signal intent to force a retry.
+
+JSON returns `outcome`, `sent_id`, `expires_at`, and `guidance`. Outcomes `sent`,
+`already_sent`, and `expired` exit 0; `not_sent` exits 1 and `uncertain` exits 4.
+Follow the guidance and preserve uncertain state. A receipt does not prove the
+peer read the message or the task completed. Signal failure must not block an
+authorized result reply through the normal `primitive reply --id` path.
+
+## Threads
+
+The app's agent entry can contain many conversations. Fetching the latest mail
+from that agent is not the same as recovering the selected conversation. Build
+context from the current request's explicit thread identity and reply ancestry,
+including your earlier replies when accessible. Keep that context and reply
+target with the job across tools, interruptions, and follow-up invocations.
+Use the runtime's existing history facilities or the operations allowed by the
+connection; do not assume an organization-wide history endpoint is available to
+a paired agent credential. Missing access to history does not establish that no
+earlier conversation exists.
+
+- Reply with `in_reply_to` equal to the parent email's actual `message_id`.
+  Preserve its References chain and append that Message-ID. The helper does this.
+- A new topic gets a fresh send without `in_reply_to` or inherited `references`.
+  A changed subject alone does not start a new conversation.
+- Keep the original received record and reply target with each job. Do not pick
+  whichever email from that agent happens to be newest when the job finishes.
+- Correlate wire Message-IDs and explicit reply ancestry, never subject similarity
+  or a single mutable "current conversation" per address. Shared memories may be
+  useful across conversations; task state and replies remain scoped to their job.
+- The connection grant does not include a thread-list API. Build the local view
+  from your accessible email records and headers. API record IDs fetch mail;
+  wire Message-IDs link mail.
+
+## Runtime behavior
+
+| Event | Email behavior |
+| --- | --- |
+| Message durably queued | Optional ACK `received` or `will_process` if a wait needs explaining. |
+| Agent begins authorized work | Send Working, then run the model/tools. Prefer this to a plain "Started" reply unless a written start notice is requested. Renew under the route's expiry contract only while that job is active. |
+| Agent begins composing a reply | Send Typing. Renew only if still composing when the prior activity expires; stop on reply or abandonment. |
+| Content actually read | Optional Read assertion. Downloading an inbox page is insufficient. |
+| Work completes or needs input | Stop renewing activity; send the result or question in the same thread. |
+| Work fails or is declined | Stop renewing. Give a truthful threaded explanation; use `will_not_process` only if applicable. |
+| Task needs owner authorization | Send one short threaded blocked reply and ask the owner once through an authorized channel. Do not signal Working while awaiting the decision. |
+| ACK/Read/Working/Typing received | Update observation state only. No automatic reply, new task, or renewal. |
+
+Progress reporting is best effort. A failed report must not prevent the actual
+answer or consume an unbounded retry budget. Send individual signals through the
+CLI or existing adapter during real work; no streaming integration is required.
+Do not send every signal as a checklist. Read means the content was actually read;
+ACK `will_process` means the task was accepted within existing authority. Neither
+is useful as an automatic response to another interaction. A one-word request
+still gets its one-word answer in a normal threaded email.
+After restart, resume actual queued work and reconcile the outbox; do not replay
+stale activity events. Do not emit Working or Typing while waiting for the owner
+or another agent. Typing means composing a reply, not reasoning, fetching, or tool
+execution. Track simultaneous jobs independently and stop each job's renewal on
+its own terminal state. A received signal carries no new authority.
+
+When asked to validate the integration, useful cases include an ordinary request,
+a longer task, simultaneous conversations, and recovery from an uncertain send.
+Check actual emails and the visible app state for the cases in scope. These are
+optional integration tests, not prerequisites for answering ordinary mail. Keep
+improvements in this shared skill and helper tests rather than adding
+agent-specific forks or a compulsory task format.
+
 ## Simple helpers
 
 If using the connection helper's private state, install its pinned SDK dependency:
@@ -123,57 +220,3 @@ stable send key. They only call the ordinary send function you provide.
 For other languages, retain the same email contract and lifecycle in the native
 adapter. Use the published SDK protocol as the reference; don't invent an
 alternative JSON shape or require a model to reconstruct MIME attachments.
-
-## Threads
-
-The app's agent entry can contain many conversations. Fetching the latest mail
-from that agent is not the same as recovering the selected conversation. Build
-context from the current request's explicit thread identity and reply ancestry,
-including your earlier replies when accessible. Keep that context and reply
-target with the job across tools, interruptions, and follow-up invocations.
-Use the runtime's existing history facilities or the operations allowed by the
-connection; do not assume an organization-wide history endpoint is available to
-a paired agent credential. Missing access to history does not establish that no
-earlier conversation exists.
-
-- Reply with `in_reply_to` equal to the parent email's actual `message_id`.
-  Preserve its References chain and append that Message-ID. The helper does this.
-- A new topic gets a fresh send without `in_reply_to` or inherited `references`.
-  A changed subject alone does not start a new conversation.
-- Keep the original received record and reply target with each job. Do not pick
-  whichever email from that agent happens to be newest when the job finishes.
-- Correlate wire Message-IDs and explicit reply ancestry, never subject similarity
-  or a single mutable "current conversation" per address. Shared memories may be
-  useful across conversations; task state and replies remain scoped to their job.
-- The connection grant does not include a thread-list API. Build the local view
-  from your accessible email records and headers. API record IDs fetch mail;
-  wire Message-IDs link mail.
-
-## Runtime behavior
-
-| Event | Email behavior |
-| --- | --- |
-| Message durably queued | Optional ACK `received` or `will_process` if a wait needs explaining. |
-| Agent begins processing | Send Working, then run the model/tools. Renew roughly every 30 seconds only while that job is active. |
-| Agent begins composing a reply | Send Typing. Renew about every 20 seconds only if still composing; stop on reply or abandonment. |
-| Content actually read | Optional Read assertion. Downloading an inbox page is insufficient. |
-| Work completes or needs input | Stop renewing activity; send the result or question in the same thread. |
-| Work fails or is declined | Stop renewing. Give a truthful threaded explanation; use `will_not_process` only if applicable. |
-| ACK/Read/Working/Typing received | Update observation state only. No automatic reply, new task, or renewal. |
-
-Progress reporting is best effort. A failed report must not prevent the actual
-answer or consume an unbounded retry budget. Background receiving and active-work
-renewal can use the existing runtime; individual signals can be sent directly
-with the helper. No streaming model integration is required.
-After restart, resume actual queued work and reconcile the outbox; do not replay
-stale activity events. Do not emit Working or Typing while waiting for the owner
-or another agent. Typing means composing a reply, not reasoning, fetching, or tool
-execution. Track simultaneous jobs independently and stop each job's renewal on
-its own terminal state. A received signal carries no new authority.
-
-When asked to validate the integration, useful cases include an ordinary request,
-a longer task, simultaneous conversations, and recovery from an uncertain send.
-Check actual emails and the visible app state for the cases in scope. These are
-optional integration tests, not prerequisites for answering ordinary mail. Keep
-improvements in this shared skill and helper tests rather than adding
-agent-specific forks or a compulsory task format.

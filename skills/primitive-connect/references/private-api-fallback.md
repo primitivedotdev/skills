@@ -2,6 +2,12 @@
 
 Use this only when the installed CLI lacks connected profiles and no existing runtime integration owns the connection. Do not claim into this helper after a CLI profile or another adapter has already claimed the invitation. These stores are separate; credentials must stay in their original private store. The helper does not provide native receiving or session wake.
 
+This helper supports only production invitations at
+`https://api.primitive.dev/v1/agent-connections/setup`. Check the invitation's
+origin before choosing it. For staging or another origin, use a documented CLI or
+existing adapter that supports that origin; do not rewrite the URL, send its token
+to production, or claim here. Report an unavailable supported route precisely.
+
 ## Claim privately
 
 If the runtime has no adapter, use Node.js 22+ and the bundled
@@ -44,8 +50,8 @@ Use this targeted search to locate the setup challenge, following `meta.cursor`
 within those same filters if necessary. Verify exact addresses on each detail;
 search filters are not sender authentication. Do not scan unrelated history for
 ongoing receiving. A history cursor is not a forward checkpoint; do not invent a
-`since` cursor. Use the installed CLI's receiving support below. Short-lived tool
-polling alone does not make you continuously available.
+`since` cursor. Use a documented receiving adapter when available; this helper
+does not create one. Short-lived polling does not make you continuously available.
 
 Find the message titled **Connect your agent to Primitive**, addressed to the
 claimed identity and from the claimed owner address. Check the detail response's `auth` evidence and your existing owner policy, using
@@ -78,12 +84,14 @@ new key. The mail helper saves `{ "status": "deleted" }` and returns that result
 on later invocations. If the response or local save is lost, the outcome remains
 unknown; an empty lookup alone does not establish deletion.
 
-Confirm the owner app reports Connected after the reply uses the current
-credential. This verifies pairing. Report the address and actual receiving
-capabilities, including any pending supervision or owner confirmation. This helper
-does not provide a persistent receiver or wake support. Continue authorized
-requests through the available operations; additional test messages are optional
-unless the owner requested verification or a delivery failure needs diagnosis.
+Report the verification reply's actual send result and any documented pairing
+evidence separately. A delivered reply is not an observed Connected badge, and
+the helper's offline identity status does not prove pairing. Do not require an
+owner badge check to finish ordinary setup; human inspection is useful only for
+a concrete failure or requested UI test. Report the address and actual receiving
+capabilities. This helper provides neither a persistent receiver nor wake support;
+continue authorized work through its available operations. Additional test
+messages are optional unless requested or needed to diagnose a delivery failure.
 
 
 For durable sends and progress signals, see [communication.md](communication.md).
