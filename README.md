@@ -15,7 +15,15 @@ npx skills add primitivedotdev/skills --skill primitive-connect
 npx skills add primitivedotdev/skills --skill primitive-network
 npx skills add primitivedotdev/skills --skill primitive-chat
 npx skills add primitivedotdev/skills --skill primitive-inbox
+npx skills add primitivedotdev/skills --skill primitive-send
+npx skills add primitivedotdev/skills --skill primitive-functions
+npx skills add primitivedotdev/skills --skill primitive-webhooks
+npx skills add primitivedotdev/skills --skill primitive-domains
 ```
+
+### As an Agent Plugin
+
+This repository is also an [Agent Plugin](https://agent-plugins.org/specification). `plugin.json` at the root is the manifest, the skills live under `skills/`, and `mcp.json` bundles Primitive's hosted MCP servers (`https://www.primitive.dev/mcp` for mail, authenticated with OAuth or a Primitive API key by your client, and `https://www.primitive.dev/mcp/docs` for public docs search, no auth). Point any Agent Plugins client at this repository to install everything at once.
 
 ## Skills
 
@@ -43,7 +51,23 @@ Teaches the `primitive chat <email> <message>` verb: send an email and wait for 
 
 Gives your agent a real, managed `*.primitive.email` address that receives mail, plus the verbs to read it (`primitive emails latest`), wait for it (`primitive emails wait`), answer it in its thread (`primitive reply`), and run a hosted Function on every inbound message. Reach for it whenever the agent needs to receive or answer email: a reply, a verification code, an alert, or a throwaway address for a signup. It also teaches when not to reply: check the conversation for your own earlier replies first, and never answer bounces, no-reply senders, auto-replies, or list mail.
 
-The chat and inbox skills share the same signup: API-key-free, with one 6-digit verification code emailed to an address you choose, no form and no human review.
+### primitive-send
+
+Sends outbound email that you do not wait on: notifications, alerts, reports, receipts, and scheduled messages, with HTML and attachments. Teaches `primitive send` and its outcome exit codes so an agent never double-sends, how to pick a valid From (`primitive sending get-outbound-status`) and check allowed recipients (`primitive sending permissions`), and how to audit what went out and why it bounced (`primitive sent list`, `primitive sent get`).
+
+### primitive-functions
+
+Runs your JavaScript on every inbound email with no server to host: scaffold from a template (`primitive functions init`), deploy a bundle or let Primitive build from source (`primitive functions deploy`), bind inbound mail (`primitive functions route-set`), prove it end to end (`primitive functions test --show-sends`), follow logs, and manage secrets without leaking them into shell history. Includes the loop-safety rules every auto-responder needs.
+
+### primitive-webhooks
+
+Delivers inbound email to your own server as signed `email.received` events. Covers creating endpoints, verifying the `Primitive-Signature` header with the SDK, routing specific addresses to specific handlers (`primitive routes add`, `primitive routes test`), receiving locally with no public URL (`primitive listen`), and debugging or replaying failed deliveries.
+
+### primitive-domains
+
+Puts Primitive on your own domain: claim it (`primitive domains add`), hand the user an importable DNS zone file (`primitive domains zone-file`), verify MX, SPF, DKIM, DMARC, and ownership records (`primitive domains verify`), and diagnose drift later (`primitive domains check-domain-dns`). Tells the agent to stop and ask before moving a domain's existing mail provider.
+
+The chat, inbox, send, functions, webhooks, and domains skills share the same signup: API-key-free, with one 6-digit verification code emailed to an address you choose, no form and no human review.
 
 ## Why
 
