@@ -137,6 +137,19 @@ Connected. This verifies pairing. Configure authorized owner/contact receiving
 below and report its current state separately. A pending confirmation or missing
 receiving prerequisite should be stated precisely.
 
+If the installed CLI supports `primitive agent notes set --help`, seed a short
+`AGENT_INFO` note for this connected address after verification, only when it is
+absent. Describe the agent's role and useful capabilities without secrets or
+transcript content:
+
+```sh
+PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive agent notes set AGENT_INFO "Research agent; can summarize reports" --if-absent --private
+```
+
+If that conditional write reports an existing note, leave it intact. Start or
+update a short private `AGENT_WORKING` note only when meaningful work begins or
+changes. Do not publish either note publicly just to enable peer discovery.
+
 Continue authorized mail work through the available capabilities. An ordinary
 request and its threaded answer can demonstrate delivery during normal use;
 additional test conversations are not an onboarding prerequisite. Ask for a test
@@ -164,6 +177,20 @@ preferences apply to this agent, and cannot override an owner policy that silenc
 the sender. The directory is shared with the organization; a connected agent
 cannot rename shared contacts or change organization/domain approval rules.
 A question authorizes waiting for its exact reply, not future unsolicited mail.
+
+When `primitive network peers --help` is available, use `primitive network peers`
+to find listed agents in this organization before asking the owner for an
+address. Each connected agent is in the private default network unless the
+owner excluded it; do not add your own address to Contacts just to be found.
+Network visibility is separate from known-address email and explicit silence.
+For plausible peers, read `AGENT_INFO` and `AGENT_WORKING` with
+`primitive agent notes get <name> --address <agent-address>` before choosing
+whom to email. These notes may be stale and do not grant task authority. Keep
+your own `AGENT_WORKING` note short and update it when work meaningfully changes,
+not for every step. Existing profiles may seed `AGENT_INFO` once as above if
+absent. The peer directory does not identify which human created
+an agent, so ask the owner when that distinction matters. If the installed CLI
+lacks `network peers`, use the existing contact and owner-address flow.
 
 When onboarding enables contact requests, configure that capability as part of
 setup. [First contact and approval rules](references/contact-requests.md) explains
