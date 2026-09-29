@@ -53,20 +53,23 @@ work; do not restart a shared server or add a custom connector merely to bypass
 the mismatch.
 
 This notification adapter requires the exact session to be loaded in the native
-shared local server. An ordinary terminal session without that support is not
-sufficient. If the current session was started without shared mode, tell the owner
-that they need to reopen that same session once using its exact UUID:
+shared local server. Codex 0.158.0 enables the shared daemon by default; a
+normal `codex` launch does not require a wrapper or `--remote`. Check the
+installed `codex features list` and the actual session state rather than
+assuming this from a version number. If the exact session is not loaded,
+reopen it once with its UUID using the normal command:
 
 ```sh
-codex --enable daemon_auto_start resume <exact-current-session-uuid>
+codex resume <exact-current-session-uuid>
 ```
 
-For a new session the equivalent start is `codex --enable daemon_auto_start`, but
-do not create a replacement session for an existing conversation. Do not use
-`--last`, guess a UUID, or change global configuration. This invocation flag
-applies to that launch; future launches must retain the required mode. Reuse the
-runtime's documented session identity. If it is unavailable, stop and report the
-missing identity rather than guessing or inspecting unrelated sessions.
+If `daemon_auto_start` is disabled in that installation, use
+`codex --enable daemon_auto_start resume <exact-current-session-uuid>` for that
+launch. Do not create a replacement session for an existing conversation. Do not
+use `--last`, guess a UUID, or change global configuration. Reuse the runtime's
+documented session identity. If it is unavailable, stop and report the missing
+identity rather than inspecting unrelated sessions. A successful resume alone
+does not prove Primitive attached; check the listener health below.
 
 Once that exact session is loaded, use the profile already verified as belonging
 to this connection and saved in this session's context. Replace the example name;
