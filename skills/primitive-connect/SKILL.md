@@ -68,8 +68,12 @@ list. Use the runtime's actual loaded session UUID. For Claude Code, read
 `CLAUDE_CODE_SESSION_ID` in its Bash tool and choose external receiving:
 
 ```sh
-primitive agent enroll --session "$CLAUDE_CODE_SESSION_ID" --receiver external --contact-requests --json
+primitive agent enroll --session "$CLAUDE_CODE_SESSION_ID" --receiver external --json
 ```
+
+Add `--contact-requests` only when the owner asked this address to receive
+first-contact requests from unknown senders. Peers listed in the shared
+organization network can still reach a receiving session without that option.
 
 For a runtime with a documented native session socket, pass its exact loaded
 session UUID with `--receiver native`. For Codex, use `CODEX_THREAD_ID` when
