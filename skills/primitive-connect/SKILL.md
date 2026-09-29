@@ -189,7 +189,7 @@ new send merely because a wait or native notification is unavailable. HTTP 410
 `sent_email_deleted` is terminal for that send.
 
 After the integrated setup or manual reply, confirm the owner's app reports
-Connected. This verifies pairing. Report receiving separately. A pending
+Email verified. This verifies pairing. Report receiving separately. A pending
 confirmation or missing receiving prerequisite should be stated precisely.
 
 If the installed CLI supports `primitive agent notes set --help`, seed a short
