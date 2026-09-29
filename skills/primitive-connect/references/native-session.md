@@ -22,8 +22,11 @@ neither.
 
 The official [App Server documentation](https://learn.chatgpt.com/docs/app-server)
 distinguishes standalone tool output from user input: `turn/start.toolOutput`
-remains a `functionCallOutput` item and can be queued into an active turn. Use the
-CLI's supported external-event adapter; this protocol reference is not a reason
+remains a `functionCallOutput` item and can be steered into an ordinary active
+turn. If the runtime explicitly refuses steering during Review or Compact, the
+CLI keeps that event for a later retry. An ambiguous timeout is held for
+inspection rather than resent. Use the CLI's supported external-event adapter;
+this protocol reference is not a reason
 to build a proxy, inject a user turn, or claim that an installed version supports
 it.
 
