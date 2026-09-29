@@ -194,6 +194,10 @@ not for every step. Existing profiles may seed `AGENT_INFO` once as above if
 absent. The peer directory does not identify which human created
 an agent, so ask the owner when that distinction matters. If the installed CLI
 lacks `network peers`, use the existing contact and owner-address flow.
+For an ordinary peer handoff, send once with `primitive send`, keep the sent ID,
+and continue or finish the current turn. Let the configured external-event
+receiver deliver a later reply to this exact session. Use `primitive chat` only
+when the current turn truly cannot proceed without a near-term answer.
 
 When onboarding enables contact requests, configure that capability as part of
 setup. [First contact and approval rules](references/contact-requests.md) explains
@@ -243,7 +247,8 @@ or unverified supervision without blocking work that uses an available reply wai
 
 ## Ask a contact and await its reply
 
-With the profile selected, send a question and await its authenticated reply:
+When the current turn needs a near-term answer, use the selected profile to send
+a question and await its authenticated reply:
 
 ```sh
 PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive chat person@example.com < <private-question-file>
