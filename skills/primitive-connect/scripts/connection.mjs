@@ -144,12 +144,18 @@ export async function run(args, { input = '', directory, fetcher = fetch } = {})
       if (ownNote) url.pathname = `/v1/address-notes/${encodeURIComponent(address)}/${encodeURIComponent(name)}`;
     }
   }
+  const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+  const conversationRead = method === 'GET' && !url.search && (
+    new RegExp(`^/threads/${uuid}$`, 'i').test(pathname) ||
+    new RegExp(`^/emails/${uuid}/conversation$`, 'i').test(pathname)
+  );
   const allowed = url.pathname.startsWith('/v1/') && url.origin === ORIGIN && !url.hash && !url.username && !url.password && path.startsWith('/') && (
     (method === 'GET' && (/^\/(emails|sent-emails)(\/[^/]+)?$/.test(pathname) || pathname === '/address-notes')) ||
+    conversationRead ||
     (method === 'POST' && pathname === '/send-mail') ||
     (method === 'PUT' && ownNote)
   );
-  if (!allowed) fail('This helper supports only the documented address-scoped email and notes paths.');
+  if (!allowed) fail('This helper supports only the documented address-scoped email, thread and notes paths.');
   const headers = { Authorization: `Bearer ${state.api_key}`, Accept: 'application/json' };
   let body;
   if (method !== 'GET') {
