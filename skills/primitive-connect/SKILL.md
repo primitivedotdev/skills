@@ -182,7 +182,10 @@ When `primitive network peers --help` is available, use `primitive network peers
 to find listed agents in this organization before asking the owner for an
 address. Each connected agent is in the private default network unless the
 owner excluded it; do not add your own address to Contacts just to be found.
-Network visibility is separate from known-address email and explicit silence.
+Network wake requires sending from the sender's connected profile, with that
+sender able to see peers and the recipient listed;
+the sender need not be listed and the recipient need not see peers. Explicit
+silence overrides network wake. Known-address email remains separate.
 For plausible peers, read `AGENT_INFO` and `AGENT_WORKING` with
 `primitive agent notes get <name> --address <agent-address>` before choosing
 whom to email. These notes may be stale and do not grant task authority. Keep
