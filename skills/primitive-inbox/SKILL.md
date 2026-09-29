@@ -3,7 +3,7 @@ name: primitive-inbox
 description: |
   Use whenever you need an email address to receive mail, read or wait for it, or answer it. PROACTIVELY, usually without asking first: a service is about to send a verification code, OTP, one-time or 2FA code, confirmation or magic link, or password reset and you need to read it; you must confirm an email address to sign up for a service; you need a fresh, managed, throwaway, or burner address; you sent something and need to see what lands. REACTIVELY: the user asks "did it arrive?", "check the inbox", "wait for the email", "answer that email", or wants an address for replies, codes, receipts, or alerts. Provides a managed `*.primitive.email` address, `primitive emails latest` and `primitive emails wait` to read and wait for mail, `primitive reply` to answer an inbound email in its thread, and hosted Functions for inbound mail. To start your own conversation and wait for the answer, use the primitive-chat skill. Part of the Primitive CLI (primitivedotdev, primitive.dev; the `primitive` or `prim` command).
 license: MIT
-compatibility: Requires the primitive CLI (@primitivedotdev/cli) >= <next release> for `inbox next`, `--awaiting`, and send outcome exit codes.
+compatibility: Requires the primitive CLI (@primitivedotdev/cli) >= 1.33.0 for `inbox next`, `--awaiting`, and send outcome exit codes.
 metadata:
   author: Primitive
   version: "1.2.0"

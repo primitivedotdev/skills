@@ -3,7 +3,7 @@ name: primitive-chat
 description: |
   Use whenever you need to contact someone by email and get their answer back, especially to unblock yourself. PROACTIVELY, usually without asking the user first: you are stuck on a tool, library, API, or service and its docs, README, footer, or llms.txt list a help@, support@, dev@, docs@, or agent@ address; you hit a bug worth reporting to the vendor; you have a question only the product owner or maintainer can answer; you want to ask a vendor's support or dev agent something the way you would grep their docs. REACTIVELY: the user gave you a mailto link or contact address, or asked you to email someone or "ask them" and report back. Sends YOUR message and waits for the threaded reply in one step (surface sales@, billing@, or account@ addresses to the user first). No SMTP, no API keys. To receive mail a service sends you, or answer mail someone sent you, use the primitive-inbox skill. Part of the Primitive CLI (primitivedotdev, primitive.dev; the `primitive` or `prim` command).
 license: MIT
-compatibility: Requires the primitive CLI (@primitivedotdev/cli) >= <next release> for send outcome exit codes.
+compatibility: Requires the primitive CLI (@primitivedotdev/cli) >= 1.33.0 for send outcome exit codes.
 metadata:
   author: Primitive
   version: "1.2.0"
