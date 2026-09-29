@@ -78,7 +78,7 @@ new key. The mail helper saves `{ "status": "deleted" }` and returns that result
 on later invocations. If the response or local save is lost, the outcome remains
 unknown; an empty lookup alone does not establish deletion.
 
-Confirm the owner app reports Connected after the reply uses the current
+Confirm the owner app reports Email verified after the reply uses the current
 credential. This verifies pairing. Report the address and actual receiving
 capabilities, including any pending supervision or owner confirmation. This helper
 does not provide a persistent receiver or wake support. Continue authorized

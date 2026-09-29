@@ -145,6 +145,32 @@ test('accepts literal and encoded own-address note paths and sends a canonical U
   }));
 });
 
+test('reads scoped thread and conversation paths without widening the helper', async t => {
+  const directory = await sandbox(t);
+  await claim(directory);
+  const id = '11111111-1111-4111-8111-111111111111';
+  for (const path of [`/threads/${id}`, `/emails/${id}/conversation`]) {
+    await run(['request', 'GET', path], { directory,
+      fetcher: async (url, init) => {
+        assert.equal(url, `${api}${path}`);
+        assert.equal(init.headers.Authorization, `Bearer ${secret}`);
+        return response({ id });
+      },
+    });
+  }
+  for (const path of [
+    '/threads/not-a-uuid', `/threads/${id}/messages`, `/threads/${id}?address=other@example.com`,
+    `/emails/${id}/conversation/other`, `/emails/${id}/conversation?address=other@example.com`,
+  ]) {
+    await assert.rejects(run(['request', 'GET', path], { directory,
+      fetcher: async () => assert.fail('Unsupported conversation path must not reach the API'),
+    }), /documented address-scoped/);
+  }
+  await assert.rejects(run(['request', 'POST', `/threads/${id}`], { directory, input: '{}',
+    fetcher: async () => assert.fail('Thread mutations are outside the helper'),
+  }), /documented address-scoped/);
+});
+
 test('rejects normalized paths outside the v1 base before sending credentials', async t => {
   const directory = await sandbox(t);
   await claim(directory);
