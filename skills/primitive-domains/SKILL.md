@@ -39,6 +39,11 @@ You cannot publish DNS records yourself unless the user has given you access to 
 
 ## Setup
 
+If this session already uses an owner-issued connected-agent credential, keep that identity and follow
+**primitive-connect**'s guidance for what it may do. Do not treat its limited scope as a signed-out session,
+and do not start a separate signup or swap in an organization key to work around it. The account setup below
+is for organization credentials.
+
 ```bash
 npm install -g @primitivedotdev/cli
 primitive whoami
