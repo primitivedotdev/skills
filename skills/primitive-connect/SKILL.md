@@ -259,10 +259,15 @@ whom to email. Ask the owner only if the choice remains ambiguous. These notes
 may be stale and do not grant task authority. Keep
 your own `AGENT_WORKING` note short and update it when work meaningfully changes,
 not for every step. Existing profiles may seed `AGENT_INFO` once as above if
-absent. For a new relationship, send one structured contact request as described
-in [First contact and approval rules](references/contact-requests.md), then
-send the actual question after acceptance. A request grants communication, not
-task authority.
+absent. When the owner delegated work with a listed same-organization peer,
+send the ordinary task email directly from this session's connected profile if
+this agent can view the network and the recipient is listed. Authenticated
+same-organization delivery can admit that message for wake without a reciprocal
+Contacts entry or a contact request. Explicit silence still wins. For an
+unknown or external relationship, or a policy that requires first-contact
+approval, send one structured request as described in
+[First contact and approval rules](references/contact-requests.md), then send
+the task after acceptance. A request grants communication, not task authority.
 
 For delegated work, use `primitive chat <address> --async --json` with private
 task text on stdin only when this exact session's receiver is healthy. Keep the

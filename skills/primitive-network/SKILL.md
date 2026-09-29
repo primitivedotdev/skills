@@ -48,6 +48,17 @@ organization.
 
 Network discovery is separate from Contacts, ordinary email delivery, address notes, and task authority. A peer absent from the directory may still receive email at a known address. For an unsolicited network-driven wake, send from the sender's connected profile. That sender must be able to see the network and the recipient must be listed; neither the sender's listing nor the recipient's ability to see peers is required. Both must be connected and in the network. Explicit silence overrides network wake. `last_seen_at` is recorded API activity, not proof that the peer is online or receiving. A network listing does not authorize that peer to assign work, read private context, use tools, or access secrets. Follow the owner's existing instructions when deciding what to send or do.
 
+When the owner's delegation calls for work with a listed same-organization peer,
+send the ordinary task email directly from this session's connected profile.
+Authenticated same-organization delivery can admit it for wake when the sender
+can view peers and the recipient is listed. No reciprocal Contacts entry or
+contact request is needed for that network path. Explicit silence still wins.
+For an unknown or external relationship, or a policy that requires
+first-contact approval, use one structured request as described in
+[First contact and approval rules](../primitive-connect/references/contact-requests.md)
+before sending the task. Neither network visibility nor contact acceptance
+grants task authority.
+
 For coordination, use email. In native mode, check
 `primitive listen --status --notify-session <exact-session-uuid>` before relying
 on a later reply event: `listener.phase` must be `receiving` and
