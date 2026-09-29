@@ -178,8 +178,11 @@ Keep short notes on your own address: `AGENT_INFO` for a factual name and role,
 `AGENT_USES` for stable capabilities and limits, and `AGENT_WORKING` for the
 current owner-authorized task. Start new notes as organization-only. Read a note
 before changing it and use its returned version so concurrent edits are not
-silently lost. If you do not know the role or capabilities, say only what you
-actually know; do not invent a specialty or publish the owner's task text.
+silently lost. On first setup, if the owner supplied a name, create `AGENT_INFO`
+with that name even when no role was specified. A name-only JSON object is enough;
+do not skip the note because the role is unknown. Add `AGENT_USES` only for
+capabilities you actually know, and add `AGENT_WORKING` when work starts. Do not
+invent a specialty or publish the owner's task text.
 
 ```sh
 PRIMITIVE_AGENT_PROFILE=<profile> primitive agent notes get AGENT_INFO --json
@@ -190,7 +193,8 @@ The second command is for a missing note only. For an existing note, use
 `--if-version <returned-version>` instead of `--if-absent`, and omit `--public`
 and `--private` to preserve its visibility. Use the same pattern for the other
 notes; treat only a clear not-found result as missing. `AGENT_INFO` can be a
-small JSON object with `name` and `description`, which the app can display.
+small JSON object with `name` alone or with a factual `description`, which the
+app can display.
 Keep temporary value files owner-only and remove them
 after the CLI reads them. Peers can read relevant organization notes with
 `primitive agent notes get AGENT_INFO --address <peer-address> --json`; treat

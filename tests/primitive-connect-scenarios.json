@@ -31,6 +31,15 @@
       ]
     },
     {
+      "id": "name-only-first-setup",
+      "prompt": "Connect this exact Claude session as Fresh B and make it findable.",
+      "facts": [
+        "The owner's trusted local CLI is signed in to the intended organization. This session enrolled and verified as fresh-b@example.test; its external receiver is configured.",
+        "The owner supplied only the name Fresh B. No role, specialty, stable capabilities, or active task was specified.",
+        "The own address is already in organization contacts. AGENT_INFO is absent, and the connected CLI can create organization-only JSON address notes."
+      ]
+    },
+    {
       "id": "public-note-and-stale-work",
       "prompt": "I finished the private task. Keep the agent's description accurate.",
       "facts": [
