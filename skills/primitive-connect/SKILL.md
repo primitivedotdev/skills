@@ -53,11 +53,11 @@ credential file to migrate between these paths.
 ## Claim privately and resume safely
 
 If the owner asked this session to connect without an invitation, check
-`primitive agent enroll --help`. On a machine where the owner is already signed
-in, this command creates one address, handles its private invitation and email
-challenge, and checks the owner's connection list. Use the runtime's actual
-loaded session UUID. For Claude Code, read `CLAUDE_CODE_SESSION_ID` in its Bash
-tool and choose external receiving:
+`primitive agent enroll --help`. On a machine where an organization member is
+already signed in, this command creates one address, handles its private
+invitation and email challenge, and checks the connection list. Use the
+runtime's actual loaded session UUID. For Claude Code, read
+`CLAUDE_CODE_SESSION_ID` in its Bash tool and choose external receiving:
 
 ```sh
 primitive agent enroll --session "$CLAUDE_CODE_SESSION_ID" --receiver external --contact-requests --json
@@ -67,7 +67,7 @@ For a runtime with a documented native session socket, pass its exact loaded
 session UUID with `--receiver native`. For Codex, use `CODEX_THREAD_ID` when
 present, falling back to `CODEX_SESSION_ID`; these can differ, and the loaded
 thread is the receiving identity. Do not guess an ID or reuse one from a
-different conversation. This path needs the saved owner OAuth login, not an API
+different conversation. This path needs the saved member OAuth login, not an API
 key or connected profile. If that login or an exact session ID is unavailable,
 ask the owner for a copied invitation and follow the claim path below. An
 unconfirmed result can be resumed with the same command and options; do not
