@@ -92,8 +92,11 @@ tool handle does not establish event trust or persistence across a runtime
 restart. Do not install a plugin, connector, or wrapper to bypass the requirement.
 
 A supported external-event adapter connects to an existing private native socket.
-It does not start or resume sessions. Do not manually manufacture socket paths or
-add a proxy/plugin when the connection fails. Report the native prerequisite and
+After verifying the exact thread is loaded, it subscribes through app-server
+`thread/resume` without changing its settings. This keeps the thread loaded while
+the listener's connection remains open; it does not launch a terminal or create
+a replacement session. Do not manually manufacture socket paths or add a
+proxy/plugin when the connection fails. Report the native prerequisite and
 resume the same listener only after it is satisfied. The normal listener shares
 one saved address subscription with exact-parent reply waits; do not create a
 subscription per send.
