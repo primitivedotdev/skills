@@ -40,17 +40,20 @@ metadata:
 
 ## Setup
 
-For an owner-issued connected-agent credential, first follow primitive-connect's
-release guidance and preserve that identity. Published CLI 1.29.0 does not provide
-the shared, authenticated exact-reply flow for this credential. Do not run account
-setup, substitute an organization key, or build a separate receiver to bypass
-that limitation. These general chat examples assume a compatible credential and
-release; waiting for one reply does not enable ongoing session notifications.
+For a session connected through primitive-connect, keep its selected
+`PRIMITIVE_AGENT_PROFILE` and follow that skill's conversation workflow. Do not
+repeat signup, switch credentials, or install another receiver. Use ordinary
+`chat` for a short answer needed now. For delegated work that may take time,
+use `primitive chat <peer> <task> --async --json`, report the send, and finish
+the turn. The exact session receiver delivers later activity and replies as
+external events. Do not wait or poll after an asynchronous send.
+
+The remaining setup instructions apply to an unconnected CLI account.
 
 Install the CLI once:
 
 ```bash
-npm install -g @primitivedotdev/cli
+npm install -g primitive
 ```
 
 (There is also a `brew install primitivedotdev/tap/primitive` tap. It auto-bumps on each release but can trail npm by the time a release PR takes to merge, so prefer npm when you want the newest version.)
@@ -102,7 +105,7 @@ On success `verify-agent-signup` prints OAuth credentials; do not echo or relay 
 
 ## How to use
 
-**`primitive chat` is the verb. Reach for it first.** It is the one-liner for "send an email and wait for the threaded reply," which is what every agent-to-agent ask-and-receive looks like. Do not compose `primitive send` + `primitive emails wait` + `primitive emails latest` to get the same effect: `chat` already handles the send, the poll, the thread continuation, and the parse-safe envelope. Lower-level verbs are escape hatches for cases `chat` does not cover (e.g. you want to fire-and-forget without a reply, or you want to scan an existing inbox you did not write to).
+**`primitive chat` is the verb. Reach for it first.** It is the one-liner for "send an email and wait for the threaded reply," which is what every agent-to-agent ask-and-receive looks like. Do not compose `primitive send` + `primitive emails wait` + `primitive emails latest` to get the same effect: `chat` already handles the send, reply receiving, thread continuation, and the parse-safe envelope. Lower-level verbs are escape hatches for cases `chat` does not cover (e.g. you want to fire-and-forget without a reply, or you want to scan an existing inbox you did not write to).
 
 Send and wait for the reply:
 
@@ -124,7 +127,11 @@ primitive chat help@openprose.ai "how do I install the prose skill?" --json
 
 The `--json` output gives you a structured envelope: `{ sent, reply, response_body, response_body_format, match, follow_up_commands }`.
 
-**If `chat` times out, your message was still sent.** A non-zero exit with `Timed out after Ns waiting for a reply` means the send succeeded and only the wait ran out (with `--json`, stdout is empty in this case). Do not resend, reworded or not: that is a second email. Wait on the existing send with the `primitive emails wait --reply-to-sent-email-id <sent-id> ...` command printed under "Helpful recovery commands" on stderr, or check `primitive sent get --id <sent-id>`. For slow responders, pass a longer `--timeout` up front. If the send itself may not have gone through (network or server error), check `primitive sent list` before trying again.
+**A reply timeout is pending, not unsent.** The JSON outcome
+`sent_awaiting_reply` exits 3 and includes the sent record and recovery commands.
+Do not resend. In a connected session, yield to its configured receiver for a late
+reply. Otherwise resume the exact sent ID with the printed command. An uncertain
+send is a different outcome (exit 4); reconcile its original send before any retry.
 
 **Answering mail someone else started** is `primitive reply --id <inbound-email-id>` (see the primitive-inbox skill). Before any follow-up, check `primitive emails conversation --id <inbound-email-id>`: messages with role `assistant` are yours, so do not send the same thing twice.
 

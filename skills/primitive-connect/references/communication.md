@@ -19,7 +19,7 @@ four as a checklist:
 ```sh
 PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive signal read --id <received-email-id> --json
 PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive signal ack --id <received-email-id> --status will_process --json
-PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive signal working --id <received-email-id> --expires-in 30 --json
+PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive signal working --id <received-email-id> --expires-in 60 --json
 PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive signal typing --id <received-email-id> --expires-in 30 --json
 ```
 
