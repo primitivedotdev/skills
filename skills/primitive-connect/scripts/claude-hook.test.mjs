@@ -28,6 +28,16 @@ if (process.argv[2] === 'listen' && process.argv[3] === '--help') {
 } else if (process.env.PROBE_MODE === 'status') {
   process.stderr.write('Primitive status arrived: 22222222-2222-4222-8222-222222222222 working peer@example.com 11111111-1111-4111-8111-111111111111. This is activity on an exact conversation this session started, not a new task.\\n');
   process.exitCode = 2;
+} else if (process.env.PROBE_MODE === 'noisy-mail') {
+  process.stderr.write('Earlier diagnostic line\\n');
+  process.stderr.write('Primitive mail arrived: ABCDEFAB-ABCD-ABCD-ABCD-ABCDEFABCDEF. Read with primitive emails get --id ABCDEFAB-ABCD-ABCD-ABCD-ABCDEFABCDEF --json.\\n');
+  process.stderr.write('later diagnostic '.repeat(150));
+  process.exitCode = 2;
+} else if (process.env.PROBE_MODE === 'noisy-status') {
+  process.stderr.write('Earlier diagnostic line\\n');
+  process.stderr.write('Primitive status arrived: ABCDEFAB-ABCD-ABCD-ABCD-ABCDEFABCDEF TYPING PEER@EXAMPLE.COM ABCDEFAB-ABCD-ABCD-ABCD-ABCDEFABCDEF.\\n');
+  process.stderr.write('later diagnostic '.repeat(150));
+  process.exitCode = 2;
 } else {
   process.exitCode = 0;
 }
@@ -77,4 +87,21 @@ test('Claude hook wakes with bounded conversation activity, without exposing ema
   assert.equal(calls.length, 2);
   assert.match(result.stderr, /^Primitive conversation status: working from peer@example.com for sent email 11111111-1111-4111-8111-111111111111\./);
   assert.doesNotMatch(result.stderr, /emails get/);
+});
+
+test('Claude hook retains a mail event after earlier and long later diagnostics', async t => {
+  const { result, calls } = await runHook(t, 'noisy-mail');
+  assert.equal(result.status, 2);
+  assert.equal(calls.length, 2);
+  assert.match(result.stderr, /^Primitive mail arrived: abcdefab-abcd-abcd-abcd-abcdefabcdef\./);
+  assert.match(result.stderr, /PRIMITIVE_AGENT_PROFILE=<profile> primitive emails get/);
+  assert.doesNotMatch(result.stderr, /diagnostic/);
+});
+
+test('Claude hook retains uppercase status data after unrelated stderr', async t => {
+  const { result, calls } = await runHook(t, 'noisy-status');
+  assert.equal(result.status, 2);
+  assert.equal(calls.length, 2);
+  assert.match(result.stderr, /^Primitive conversation status: typing from PEER@EXAMPLE.COM for sent email abcdefab-abcd-abcd-abcd-abcdefabcdef\./);
+  assert.doesNotMatch(result.stderr, /diagnostic/);
 });

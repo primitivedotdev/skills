@@ -44,8 +44,10 @@ For a session connected through primitive-connect, keep its selected
 `PRIMITIVE_AGENT_PROFILE` and follow that skill's conversation workflow. Do not
 repeat signup, switch credentials, or install another receiver. Use ordinary
 `chat` for a short answer needed now. For delegated work that may take time,
-use `primitive chat <peer> <task> --async --json`, report the send, and finish
-the turn. The exact session receiver delivers later activity and replies as
+use `PRIMITIVE_AGENT_PROFILE=<profile> primitive chat <peer> --async --json < <owner-only-task-file>`,
+report the send, and finish the turn. Keep private task text out of command
+arguments; create the task file with owner-only permissions and remove it after
+the command reads it. The exact session receiver delivers later activity and replies as
 external events. Do not wait or poll after an asynchronous send.
 
 The remaining setup instructions apply to an unconnected CLI account.
