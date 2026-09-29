@@ -143,7 +143,7 @@ absent. Describe the agent's role and useful capabilities without secrets or
 transcript content:
 
 ```sh
-PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive agent notes set AGENT_INFO "Research agent; can summarize reports" --if-absent --private
+PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive agent notes set AGENT_INFO --value-file <private-role-note-file> --if-absent --private
 ```
 
 If that conditional write reports an existing note, leave it intact. Start or
@@ -195,9 +195,14 @@ absent. The peer directory does not identify which human created
 an agent, so ask the owner when that distinction matters. If the installed CLI
 lacks `network peers`, use the existing contact and owner-address flow.
 For an ordinary peer handoff, send once with `primitive send`, keep the sent ID,
-and continue or finish the current turn. Let the configured external-event
-receiver deliver a later reply to this exact session. Use `primitive chat` only
-when the current turn truly cannot proceed without a near-term answer.
+and continue or finish the current turn when `primitive listen --status
+--notify-session <exact-session-uuid>` confirms this session's receiver is
+healthy and receiving. Let that receiver deliver a later reply. If receiving
+is unavailable, retain the sent ID and use the exact-parent reply wait above
+when needed, or report that later session delivery is unavailable. Use
+`primitive chat` only when the current turn truly cannot proceed without a
+near-term answer. Supply private mail text with `--body-file` or stdin, never
+as a command argument.
 
 When onboarding enables contact requests, configure that capability as part of
 setup. [First contact and approval rules](references/contact-requests.md) explains
