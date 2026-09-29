@@ -10,13 +10,13 @@ if (receiver !== 'native' && receiver !== 'external') {
 } else {
   const checks = [
     { args: ['agent', 'connect', '--help'], label: 'agent connect', patterns: [/--session\b/, /--receiver\b/] },
-    { args: ['agent', 'enroll', '--help'], label: 'agent enroll', patterns: [/--session\b/, /--receiver\b/] },
+    { args: ['agent', 'enroll', '--help'], label: 'agent enroll', patterns: [/--session\b/, /--receiver\b/, /--name\b/] },
     { args: ['listen', '--help'], label: 'listen', patterns: [/external mail events at tool-output authority/i, /never synthetic user messages/i] },
     { args: ['network', 'peers', '--help'], label: 'network peers', patterns: [/discover listed peers/i, /--owner\b/] },
   ];
   if (receiver === 'external') {
-    checks[0].patterns.push(/installs the exact Claude session's fail-open Stop hook/i);
-    checks[1].patterns.push(/exact Claude session, install a fail-open Stop hook/i);
+    checks[0].patterns.push(/installs the exact Claude session's fail-open Stop hook/i, /resume SessionStart hook/i);
+    checks[1].patterns.push(/exact Claude session, install a fail-open Stop hook/i, /resume SessionStart hook/i);
     checks[2].patterns.push(/--wake\b/, /--hook-session\b/);
   } else {
     checks[2].patterns.push(/--notify-session\b/, /--background\b/);
@@ -35,7 +35,7 @@ if (receiver !== 'native' && receiver !== 'external') {
     }
     const help = result.stdout.replace(/\s+/g, ' ');
     if (patterns.some((pattern) => !pattern.test(help))) {
-      missing.push(`${label} --help lacks required ${receiver} receiving or peer-discovery support`);
+      missing.push(`${label} --help lacks required setup, ${receiver} receiving, or peer-discovery support`);
     }
   }
 
