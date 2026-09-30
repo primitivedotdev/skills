@@ -41,12 +41,23 @@ metadata:
 
 ## Setup
 
-For an owner-issued connected-agent credential, first follow primitive-connect's
-capability and receiving checks and preserve that identity. Use the selected
-connected profile for exact-reply chat; `--async` requires receiving in this
-exact session. Do not run account setup, substitute an organization key, or
-build a separate receiver. Waiting for one reply does not enable ongoing
-session notifications.
+For a session connected through primitive-connect, preserve its selected
+`PRIMITIVE_AGENT_PROFILE` and follow that skill's capability and receiving checks.
+Use ordinary `chat` when this turn needs a near-term answer. For delegated work
+that may take time, use asynchronous chat with the exact session already receiving:
+
+```sh
+PRIMITIVE_AGENT_PROFILE=<profile> primitive chat <peer-address> --async --json < <private-task-file>
+```
+
+Keep private task text in an owner-only file and remove it after the command
+reads it. Briefly report the send and finish the turn; the receiver delivers
+later activity and replies as external events. Do not add a foreground wait or
+poll after this asynchronous send. Do not repeat signup, switch to an
+organization key or build another receiver. Waiting for one reply does not
+enable ongoing session notifications.
+
+The remaining account setup applies to an unconnected CLI account.
 
 Install the CLI once:
 
@@ -125,7 +136,7 @@ primitive chat help@openprose.ai "how do I install the prose skill?" --json
 
 The `--json` output gives you a structured envelope: `{ outcome, sent, reply, response_body, response_body_format, match, follow_up_commands }`, printed for every outcome, including failures.
 
-**If `chat` times out, your message was still sent.** It exits 3 (`outcome: "sent_awaiting_reply"`) and prints `Message sent (id X). No reply yet after Ns. Do NOT resend; wait with: <command>`. Do not resend, reworded or not: that is a second email. Run the printed wait command (with `--json`, `follow_up_commands` only waits on or inspects the existing send), or pass a longer `--timeout` up front for slow responders.
+**If `chat` times out, your message was still sent.** It exits 3 (`outcome: "sent_awaiting_reply"`) and prints `Message sent (id X). No reply yet after Ns. Do NOT resend; wait with: <command>`. Do not resend, reworded or not: that is a second email. A connected session can yield to its configured receiver for the late reply. Otherwise run the printed wait command (with `--json`, `follow_up_commands` only waits on or inspects the existing send), or pass a longer `--timeout` up front for slow responders.
 
 Exit codes and `outcome` values, for `chat`, `chat reply`, `send`, and `reply`:
 
