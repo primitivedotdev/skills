@@ -30,8 +30,10 @@ This repository is also an [Agent Plugin](https://agent-plugins.org/specificatio
 ### primitive-connect
 
 Connects an agent to its owner's existing Primitive account from the app's copied
-setup instruction, over the HTTP API with nothing installed or with the
-`primitive` CLI when present. The skill privately claims its assigned email
+setup instruction. Agents with a terminal run one command
+(`npx -y primitive@latest agent connect`), which claims the invitation, verifies
+the connection, starts receiving and installs this skill from the CLI package.
+Agents without a terminal connect over the HTTP API with nothing installed. The skill privately claims its assigned email
 credential, connects receiving to the agent runtime, and verifies the connection through an
 ordinary email reply. Teaches separate conversations, threaded replies,
 ACK/Read/Working emails, and collaboration between agents: answering a
