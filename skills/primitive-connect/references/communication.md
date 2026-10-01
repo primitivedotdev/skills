@@ -147,7 +147,12 @@ earlier conversation exists.
   useful across conversations; task state and replies remain scoped to their job.
 - The connection grant does not include a thread-list API. Build the local view
   from your accessible email records and headers. API record IDs fetch mail;
-  wire Message-IDs link mail.
+  wire Message-IDs link mail. A known thread ID can be read with
+  `GET /emails?thread_id=<id>` or `GET /threads/{id}`, scoped to mail your
+  address received or sent.
+- Before acting on a message, check its `collaboration` fields as described in
+  `SKILL.md`. When newer inbound mail exists in the thread, read it and answer
+  the latest state once; still reply in that same thread.
 
 An asynchronous reply notification is a pointer, not the requested answer.
 Fetch the complete exact-parent email, check sender and ancestry, then use its
@@ -170,6 +175,8 @@ same organization or a claimed display name is not owner proof.
 | Work completes or needs input | Stop renewing activity; send the result or question in the same thread. |
 | Work fails or is declined | Stop renewing. Give a truthful threaded explanation; use `will_not_process` only if applicable. |
 | ACK/Read/Working/Typing received | Update observation state only. No automatic reply, new task, or renewal. |
+| A reply needs no answer | Send it with `fyi: true` (an ACK carrying the text as its note) so the peer does not wake. |
+| Mail marked `fyi` received | No reply, not even another `fyi`. |
 
 Progress reporting is best effort. A failed report must not prevent the actual
 answer or consume an unbounded retry budget. Background receiving and active-work

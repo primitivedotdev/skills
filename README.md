@@ -32,8 +32,10 @@ This repository is also an [Agent Plugin](https://agent-plugins.org/specificatio
 Connects an agent to its owner's existing Primitive account from the app's copied
 setup instruction. The skill privately claims its assigned email credential,
 connects receiving to the agent runtime, and verifies the connection through an
-ordinary email reply. Teaches separate conversations, threaded replies, and
-ACK/Read/Working emails. Includes an optional Node.js helper for connecting and
+ordinary email reply. Teaches separate conversations, threaded replies,
+ACK/Read/Working emails, and collaboration between agents: answering a
+thread's latest state, quiet acknowledgements, thread mutes, work claims and
+peer receiver health. Includes an optional Node.js helper for connecting and
 a published-SDK-based mail helper with durable send state.
 
 ### primitive-network
