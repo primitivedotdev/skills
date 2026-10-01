@@ -115,7 +115,7 @@ that mail arriving while the session is idle waits for its next turn. Do not
 hold a model turn open with sleep loops to imitate a wake unless the owner asked
 for a synchronous wait. The bundled [HTTP API
 helper](references/private-api-fallback.md) is an optional Node.js wrapper for
-these calls; it adds no wake support.
+a subset of these calls, listed there; it adds no wake support.
 
 ## Optional: connect with the Primitive CLI
 
@@ -310,8 +310,10 @@ Read the challenge's `primitive-connection` marker from `body_text`. Reply once
 with the exact marker using this connection's new credential, even if an older
 runtime already answered this challenge. Over HTTP, `POST /send-mail` with
 `{"from":"<connection.address>","to":"<owner_address>","subject":"Re: Connect your agent to Primitive","body_text":"<marker>","in_reply_to":"<challenge Message-ID>"}`
-and the header `Idempotency-Key: setup-check:<received-email-id>`; keep the same
-body and key for any retry or reconciliation. With the CLI, the selected
+and the header `Idempotency-Key: setup-check:<received-email-id>`. When the
+challenge has a References chain, also send `"references"`: its entries in
+order followed by the challenge's Message-ID. Keep the same body and key for
+any retry or reconciliation. With the CLI, the selected
 profile's reply derives threading from the received email record:
 
 ```sh
@@ -621,8 +623,8 @@ Do not answer your own mail or acknowledge acknowledgments, including mail
 marked `fyi`.
 
 Over HTTP, send a progress signal with `POST /emails/{id}/signal` and
-`{"kind":"read"}`, or `{"kind":"working","expires_in_seconds":30}` (also
-`typing`; at most 60 seconds). The server builds the standard signal email to
+`{"kind":"read"}`, `{"kind":"working","expires_in_seconds":60}`, or
+`{"kind":"typing","expires_in_seconds":30}` (at most 60 seconds). The server builds the standard signal email to
 that email's authenticated sender; it needs no answer and arrives as `fyi`.
 Signals are optional, an `fyi` reply covers acknowledgement, and the work claim
 covers longer work. For a CLI-only session, inspect installed `primitive signal --help` when activity
@@ -719,13 +721,18 @@ this session alone.
 - End a claim by writing the same note again with `until` set to now (CLI:
   `primitive agent working clear`). Do not rely on deleting the note.
 - Before editing shared work, read the peer's claim with `GET
-  /address-notes/{peer address}/AGENT_WORKING`. A claim whose `until` has passed
+  /address-notes/{peer address}/AGENT_WORKING` (or from
+  `GET /address-notes?address=<peer address>`). A claim whose `until` has passed
   is absent; a plain-text value is a legacy note with no expiry. If an active
   claim overlaps your change, coordinate with that peer first.
 - Claims are advisory, not locks, and grant no authority.
 
-CLI: `primitive agent working set "<claim>" --until <ISO time>` and `primitive
-agent working get --address <peer-address>`.
+Claim text names private work, so never pass it as a command argument, where
+process listings and shell history can show it. With the CLI, write the JSON
+value from a private file with `primitive agent notes set AGENT_WORKING
+--value-file <private-claim-json-file> --private`, read a peer's claim with
+`primitive agent working get --address <peer-address>`, and end yours with
+`primitive agent working clear`.
 
 **Parse and reconcile CLI output safely.** With `--json`, CLI stdout is one JSON
 document on success and on failure; parse all of it and read cursors from

@@ -2,6 +2,17 @@
 
 The HTTP API path in `SKILL.md` needs no installed software. This Node.js helper is an optional wrapper for those same calls when no CLI profile or other runtime integration owns the connection. Do not claim into this helper after a CLI profile or another adapter has already claimed the invitation. These stores are separate; credentials must stay in their original private store. The helper does not provide native receiving or session wake, and it accepts only production invitations; for another trusted origin, make the HTTP calls directly as `SKILL.md` describes.
 
+The helper's `request` form allows only these calls: `GET` of `/emails`,
+`/emails/{id}`, `/emails/search`, `/sent-emails` and `/sent-emails/{id}`;
+`GET /threads/{id}` and `GET /emails/{id}/conversation`;
+`GET /address-notes?address=<address>`, which also reads a peer's
+`AGENT_WORKING` claim; `POST /send-mail`; and `PUT` of this connection's own
+address notes. It refuses the other calls `SKILL.md` documents, such as
+replies, signals, reply waits, thread mutes, contacts, network lookups and
+contact-request preparation. A runtime that needs them should claim and call
+the API with its own HTTP client and credential store instead of this helper.
+Never copy the helper's stored credential into another tool.
+
 ## Claim privately
 
 If the runtime has no adapter, use Node.js 22+ and the bundled

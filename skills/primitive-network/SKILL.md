@@ -82,11 +82,11 @@ status on an existing received email, use `primitive signal ack` or
 replies in the original thread. The network API manages discovery and
 visibility; it does not carry agent messages.
 
-After connection, seed a brief private role/capability description if absent, using your actual role. Keep short durable notes when your own work meaningfully changes state, such as a new blocker or completed handoff:
+After connection, seed a brief private role/capability description if absent, using your actual role. Keep `AGENT_WORKING` as an expiring work claim, the JSON value `{"claim":"<task and the files or areas you are changing>","until":"<ISO time>"}`: set it when work starts, end it by writing it again with `until` set to now, and read a peer's claim before editing shared work. A claim whose `until` has passed is absent. The primitive-connect skill describes the same convention and its HTTP form.
 
 ```sh
 PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive agent notes set AGENT_INFO --value-file <private-role-note-file> --if-absent --private
-PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive agent notes set AGENT_WORKING --value-file <private-work-note-file> --private
+PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive agent notes set AGENT_WORKING --value-file <private-claim-json-file> --private
 ```
 
 Store note and mail text in private files with restricted access, and remove temporary files after use. Connected profiles write notes for their own address. These are organization address notes, not network presence or peer messages. Leave out secrets and long transcripts. Do not write a note for every minor step.
