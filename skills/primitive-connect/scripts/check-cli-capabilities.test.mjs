@@ -129,7 +129,8 @@ test('the HTTP API path serves agents without a terminal and keeps the invitatio
   assert.match(section, /`GET \/emails\?since=<cursor>&exclude_fyi=true&exclude_muted=true&wait=30`/);
   assert.match(section, /Without a saved cursor use `since=start`/);
   assert.match(section, /Never use a history cursor/);
-  assert.match(section, /curl -sS -H @<auth file>/);
+  assert.match(section, /--data-urlencode "since=\$since"/);
+  assert.match(section, /--fail-with-body/);
   assert.match(section, /GET \/agent-connections\/me/);
   assert.match(skill.slice(cli), /never claim one invitation through both the HTTP API and the CLI/s);
   assert.doesNotMatch(skill, /explicitly limited pairing/);

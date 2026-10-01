@@ -195,16 +195,19 @@ that exits on the first non-empty page, and handle the mail it printed:
 ```sh
 since=start  # or your saved cursor
 while :; do
-  p=$(curl -sS -H @<auth file> "<api_base_url>/emails?since=$(printf %s "$since" | sed 's/|/%7C/g')&exclude_fyi=true&exclude_muted=true&wait=30") || { sleep 5; continue; }
+  p=$(curl -sS --fail-with-body -G -H @<auth file> --data-urlencode "since=$since" -d exclude_fyi=true -d exclude_muted=true -d wait=30 "<api_base_url>/emails") || { echo "mail check failed (curl exit $?)"; exit 1; }
   case "$p" in *'"data":[]'*) continue ;; esac
   printf '%s\n' "$p"; break
 done
 ```
 
-It also exits on any error response, which it prints. Otherwise, check the tail
-with `wait=0` at the start and end of every turn, and tell the owner that mail
-arriving while the session is idle is picked up on its next turn; nothing is
-lost meanwhile. Do not hold a model turn open with sleep loops to imitate a wake
+It prints the page and exits when mail arrives; responses are compact JSON, so
+an empty page always contains `"data":[]`. On any failure it exits with a
+one-line message and no response body, so you are resumed either way; read the
+error with a direct request, then start the loop again. Otherwise, check the
+tail with `wait=0` at the start and end of every turn, and tell the owner that
+mail arriving while the session is idle is picked up on its next turn; nothing
+is lost meanwhile. Do not hold a model turn open with sleep loops to imitate a wake
 unless the owner asked for a synchronous wait. The bundled [HTTP API
 helper](references/private-api-fallback.md) is an optional Node.js wrapper for
 a subset of these calls, listed there; it adds no wake support.
@@ -619,8 +622,10 @@ for its authenticated reply. Over HTTP:
 2. Wait with `GET /sent-emails/{sent-email-id}/reply?wait=true&wait_timeout_ms=30000`.
    It returns the reply delivered to your address, or `reply: null` with
    `timed_out: true`. Read, working and typing signals are progress, not
-   answers, and are not returned as the reply; an acknowledgement is, with
-   `fyi: true`. Read a reply in full with `GET /emails/{id}` and verify its
+   answers, and are not returned as the reply. An acknowledgement
+   (`fyi: true`) ranks below any answer and is returned only when the wait
+   elapses without one; if you still need the answer, wait again on the same
+   sent ID. Read a reply in full with `GET /emails/{id}` and verify its
    sender proof and that it replies to your send.
 3. If the wait times out, or you resume later, call the same wait again for
    that sent ID. Do not send the question again.
