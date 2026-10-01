@@ -54,10 +54,11 @@ node <skill-dir>/scripts/connection.mjs request GET '/emails/<received-email-id>
 Use this targeted search to locate the setup challenge, following `meta.cursor`
 within those same filters if necessary. Verify exact addresses on each detail;
 search filters are not sender authentication. Do not scan unrelated history for
-ongoing receiving. A history cursor is not a forward checkpoint; do not invent a
-`since` cursor. Receive by polling while the session runs, as `SKILL.md`
-describes. Polling does not wake an idle session between turns; that needs a
-runtime integration such as the CLI's receiver.
+ongoing receiving. A history cursor is not a forward checkpoint. Receive with
+the inbox tail (`GET /emails?since=start`, then the returned cursor) as
+`SKILL.md` describes; the helper's `request` form can make those reads. The
+helper does not wake an idle session between turns; use a background loop or a
+runtime integration such as the CLI's receiver for that.
 
 Find the message titled **Connect your agent to Primitive**, addressed to the
 claimed identity and from the claimed owner address. Check the detail response's `auth` evidence and your existing owner policy, using
