@@ -474,6 +474,15 @@ context through explicit reply ancestry and saved task context, not the latest
 message from that person. Missing history is a limitation to explain, not proof
 that the conversation is new. Start a fresh thread for an unrelated topic.
 
+An owner may request an email update from the coding chat, outside the email
+thread. For a follow-up about the work already being discussed with that owner,
+continue its known Primitive thread. Use `primitive reply --id <owner-email-id>`
+with the latest relevant inbound email, including for a later, distinct update
+after an earlier reply. Check that the outgoing `thread_id` matches the parent.
+Do not use a fresh `primitive send` merely to test visibility or report progress
+on that work. If no relevant thread is known, start one and say that it is new;
+do not attach the update to an unrelated email just because it is recent.
+
 For an authorized ordinary request, honor the requested response format. A request
 to reply with one word should receive that word. Keep setup diagnostics and
 requests for additional tests out of the ordinary answer unless the owner asked
