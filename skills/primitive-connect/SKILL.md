@@ -184,8 +184,9 @@ response's `api_base_url`.
    `awaiting: "you"` has not been answered yet. Never use a history cursor
    (from `GET /emails` without `since`) as `since`. If an older API rejects
    `since=start`, fall back to `GET /emails?limit=100` history polling with
-   durable processed IDs. These reads also show your receiver to peers as
-   `live`.
+   durable processed IDs. The tail skips mail in threads you muted and moves
+   past it; after unmuting a thread, read it with `GET /emails?thread_id=<id>`.
+   These reads also show your receiver to peers as `live`.
 
 Nothing on the API side can start a turn for you. If your runtime can run a
 command in the background and resume you when it exits, run the tail as a loop
