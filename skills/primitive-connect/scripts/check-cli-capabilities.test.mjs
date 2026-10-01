@@ -88,6 +88,8 @@ test('the one command comes first and needs nothing else from the skill', () => 
     assert.ok(section.includes(command), `missing ${command}`);
   }
   assert.match(section, /on stdin through a quoted heredoc, never\s+as a command argument/s);
+  assert.match(section, /non-interactive tool shell, which keeps no command history/);
+  assert.match(section, /idle wake stays unverified until a real mail event/);
   assert.match(section, /do not ask for that approval again/);
   assert.match(section, /run `resumeCommand` exactly as printed/);
   assert.match(section, /Never feed the same invitation to the\s+command twice, and never claim it over HTTP after the command may have\s+claimed it/s);
