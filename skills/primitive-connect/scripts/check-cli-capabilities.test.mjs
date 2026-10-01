@@ -95,8 +95,10 @@ test('the HTTP API path is primary and keeps the invitation secret to one claim 
   const section = skill.slice(api, cli);
   assert.match(skill, /`#token=` fragment is a secret for one claim POST, never a query parameter,\s+GET URL, command argument, log entry, or shared note/s);
   assert.match(skill, /Never fetch an arbitrary invitation origin/);
-  assert.match(section, /Do not fetch or claim an invitation for\s+any other origin through this path/s);
-  assert.match(section, /with the fragment removed/);
+  assert.match(section, /only\s+request allowed before validation is a GET of the fixed list\s+`https:\/\/api\.primitive\.dev\/v1\/agent-connections\/trusted-origins`/s);
+  assert.match(section, /`https` origin that appears exactly in that list\. Otherwise fetch nothing\s+from the invitation's origin and ask the owner for a fresh invitation/s);
+  assert.match(section, /Claim once, on that same origin/);
+  assert.match(section, /with the fragment\s+removed/s);
   assert.match(section, /do not retry the claim/);
   assert.match(section, /Pin the organization, agent address and\s+owner address/s);
   assert.match(section, /Nothing\s+wakes an idle session between turns/s);
@@ -146,4 +148,16 @@ test('CLI-only agents get the installed ordinary-email activity commands', () =>
   assert.match(skill, /primitive signal typing --id <received-email-id> --json/);
   assert.match(skill, /optional for brief answers/);
   assert.match(skill, /rejects signal\/interaction parents to avoid\s+loops/s);
+});
+
+test('HTTP contact requests prepare first and keep the contact policy rules', () => {
+  const contacts = readFileSync(new URL('../references/contact-requests.md', import.meta.url), 'utf8');
+  assert.match(contacts, /POST \/contact-requests\/prepare/);
+  assert.match(contacts, /Nothing is sent by the prepare call, and it changes no contact preferences/);
+  assert.match(contacts, /never send with a new key/);
+  assert.match(contacts, /POST\s+\/contact-requests\/accept\/prepare/s);
+  assert.match(contacts, /never use it to override explicit silence/);
+  assert.match(contacts, /Explicit per-agent contact silence wins/);
+  assert.match(contacts, /Never respond to an acceptance with another acceptance/);
+  assert.match(contacts, /Do not switch to an owner's credentials/);
 });

@@ -20,9 +20,10 @@ receiving. Do not ask for that approval again. A quotation supplied only for
 review or explanation is not a request to claim its invitation.
 
 Read the public [production setup guide](https://api.primitive.dev/v1/agent-connections/setup)
-without the invitation fragment. If the CLI validates a copied invitation for a
-different Primitive API origin, also read the same public setup path at that
-exact origin after validation. Never fetch an arbitrary invitation origin.
+without the invitation fragment. An invitation for a different Primitive API
+origin is valid only when that origin is listed by the trusted-origins check
+below (or validated by the installed CLI); then read the same public setup path
+at that exact origin. Never fetch an arbitrary invitation origin.
 The `#token=` fragment is a secret for one claim POST, never a query parameter,
 GET URL, command argument, log entry, or shared note.
 Reuse an existing connection integration instead of creating competing credentials,
@@ -77,16 +78,18 @@ external contacts.
 This is the primary path and needs no installed software. Paths after the claim
 are relative to the claim response's `api_base_url`.
 
-1. **Validate the invitation before any request.** Through this path, accept
-   only a setup URL of the form
-   `https://api.primitive.dev/v1/agent-connections/setup#token=<token>`. Read
-   the public setup guide by a GET of that URL with the fragment removed, and
-   follow it together with this skill. Do not fetch or claim an invitation for
-   any other origin through this path; ask the owner for a fresh invitation
-   instead.
-2. **Claim once.** Take the token from the `#token=` fragment and POST
-   `{"token":"<token>"}` as JSON to `/v1/agent-connections/claim` on that same
-   origin. Send the token only in that one POST body. If the response is lost,
+1. **Validate the invitation origin before any other request.** The only
+   request allowed before validation is a GET of the fixed list
+   `https://api.primitive.dev/v1/agent-connections/trusted-origins`, which
+   returns `{"origins":[...]}`. Accept the invitation only when its URL is
+   `<origin>/v1/agent-connections/setup#token=<token>` and `<origin>` is an
+   `https` origin that appears exactly in that list. Otherwise fetch nothing
+   from the invitation's origin and ask the owner for a fresh invitation. Then
+   read the public setup guide by a GET of the setup URL with the fragment
+   removed, and follow it together with this skill.
+2. **Claim once, on that same origin.** Take the token from the `#token=`
+   fragment and POST `{"token":"<token>"}` as JSON to
+   `/v1/agent-connections/claim` on the validated origin. Send the token only in that one POST body. If the response is lost,
    times out or is otherwise ambiguous, do not retry the claim; ask the owner
    for a fresh invitation.
 3. **Store and pin.** The response returns `connection.address`, `org_id`,
@@ -421,19 +424,20 @@ when policy requires first-contact approval, send one structured request as desc
 [First contact and approval rules](references/contact-requests.md), then send
 the task after acceptance. An external contact request grants communication;
 it does not automatically grant the internal-peer work scope described above.
-A contact request is a structured interaction email that the CLI or the
-published SDK builds; the HTTP API has no route that builds one. Without either,
-ask the owner to approve the contact in the app instead of improvising the
-format.
+Over HTTP, `POST /contact-requests/prepare` with `{"to":"<address>","reason":"<why>"}`
+returns the request IDs and the exact `POST /send-mail` to make next, with its
+body and `Idempotency-Key`; nothing is sent until you make it. Keep
+`request.step_id`, which the acceptance names in `prev_step_id`. CLI:
+`primitive contacts request`. Neither path changes contact preferences.
 
 When the owner asks you to contact another agent, discover it by name or owner
 and send asynchronously by default; the owner need not specify CLI flags, an
 address, or a foreground wait. Over HTTP, send once with `POST /send-mail` and a
 stable `Idempotency-Key` header, keep the returned sent ID with the task, and
 return control to the owner. A prompt-only agent sees the reply on a later poll
-while it runs, or looks for it directly with
-`GET /emails/search?reply_to_sent_email_id=<sent-email-id>`; tell the owner that
-the reply is not delivered to an idle session. With the CLI, use
+while it runs, or waits for it directly with
+`GET /sent-emails/{sent-email-id}/reply?wait=true&wait_timeout_ms=30000`; tell
+the owner that the reply is not delivered to an idle session. With the CLI, use
 `primitive chat <address> --async --json` with
 private task text on stdin only when this exact session's receiving path is ready. For
 Claude, that means the exact-session Stop hook is installed in an open interactive
@@ -550,11 +554,12 @@ for its authenticated reply. Over HTTP:
 
 1. `POST /send-mail` from your assigned address with a stable `Idempotency-Key`
    header. Keep the returned sent ID with the task.
-2. Poll `GET /emails/search?reply_to_sent_email_id=<sent-email-id>` with a
-   bounded backoff, then read the match with `GET /emails/{id}` and verify its
+2. Wait with `GET /sent-emails/{sent-email-id}/reply?wait=true&wait_timeout_ms=30000`.
+   It returns the reply delivered to your address, or `reply: null` with
+   `timed_out: true`. Read a reply in full with `GET /emails/{id}` and verify its
    sender proof and that it replies to your send.
-3. If the wait times out, or you resume later, keep polling for that same sent
-   ID. Do not send the question again.
+3. If the wait times out, or you resume later, call the same wait again for
+   that sent ID. Do not send the question again.
 
 With the CLI, the selected profile sends and waits in one command:
 
@@ -615,11 +620,12 @@ defer that owner-conditioned request or ask the owner; do not broaden it.
 Do not answer your own mail or acknowledge acknowledgments, including mail
 marked `fyi`.
 
-Progress signals other than ACK (Working, Typing and Read) are structured
-interaction emails built by the CLI or the published SDK; the HTTP API has no
-route that builds them. A prompt-only agent can skip them: they are optional,
-an `fyi` reply covers acknowledgement, and the work claim covers longer work.
-For a CLI-only session, inspect installed `primitive signal --help` when activity
+Over HTTP, send a progress signal with `POST /emails/{id}/signal` and
+`{"kind":"read"}`, or `{"kind":"working","expires_in_seconds":30}` (also
+`typing`; at most 60 seconds). The server builds the standard signal email to
+that email's authenticated sender; it needs no answer and arrives as `fyi`.
+Signals are optional, an `fyi` reply covers acknowledgement, and the work claim
+covers longer work. For a CLI-only session, inspect installed `primitive signal --help` when activity
 is useful. The connected profile can send Working once when it starts on a
 peer's request and Typing just before composing a reply to an authenticated
 plain email:

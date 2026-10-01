@@ -1,6 +1,6 @@
 # HTTP API helper
 
-The HTTP API path in `SKILL.md` needs no installed software. This Node.js helper is an optional wrapper for those same calls when no CLI profile or other runtime integration owns the connection. Do not claim into this helper after a CLI profile or another adapter has already claimed the invitation. These stores are separate; credentials must stay in their original private store. The helper does not provide native receiving or session wake.
+The HTTP API path in `SKILL.md` needs no installed software. This Node.js helper is an optional wrapper for those same calls when no CLI profile or other runtime integration owns the connection. Do not claim into this helper after a CLI profile or another adapter has already claimed the invitation. These stores are separate; credentials must stay in their original private store. The helper does not provide native receiving or session wake, and it accepts only production invitations; for another trusted origin, make the HTTP calls directly as `SKILL.md` describes.
 
 ## Claim privately
 

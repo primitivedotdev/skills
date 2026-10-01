@@ -6,6 +6,11 @@ below are optional conveniences, not a required agent framework or hosting model
 
 ## Simple helpers
 
+With nothing installed, send Read, Working or Typing with
+`POST /emails/{id}/signal` (`{"kind":"working","expires_in_seconds":30}`)
+and an acknowledgement with `fyi: true`, as `SKILL.md` describes. The helpers
+below are optional for runtimes that keep their own durable outbox.
+
 If using the connection helper's private state, install its pinned SDK dependency:
 
 ```sh
