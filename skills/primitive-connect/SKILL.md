@@ -8,7 +8,10 @@ description: Connect this agent to its owner's Primitive app from a copied setup
 The owner may give you a private setup invitation from the Primitive app, or
 ask you to connect on a trusted machine with their existing CLI login. Connect
 this exact coding session to the owner's organization, keep its assigned
-identity, and use ordinary email for conversations. Do not create another
+identity, and use ordinary email for conversations. Nothing needs to be
+installed: the [HTTP API path](#connect-with-the-http-api) works for any agent
+that can make HTTPS requests and keep a secret privately. The `primitive` CLI is
+an optional convenience when it is already present. Do not create another
 account or install a separate connector or plugin.
 
 An imperative setup instruction pasted as the owner's request authorizes this
@@ -69,7 +72,55 @@ information or context shared in their thread. Additional work follows the owner
 existing delegation; same-organization trust does not automatically extend to
 external contacts.
 
-## Select the installed capability
+## Connect with the HTTP API
+
+This is the primary path and needs no installed software. Paths after the claim
+are relative to the claim response's `api_base_url`.
+
+1. **Validate the invitation before any request.** Through this path, accept
+   only a setup URL of the form
+   `https://api.primitive.dev/v1/agent-connections/setup#token=<token>`. Read
+   the public setup guide by a GET of that URL with the fragment removed, and
+   follow it together with this skill. Do not fetch or claim an invitation for
+   any other origin through this path; ask the owner for a fresh invitation
+   instead.
+2. **Claim once.** Take the token from the `#token=` fragment and POST
+   `{"token":"<token>"}` as JSON to `/v1/agent-connections/claim` on that same
+   origin. Send the token only in that one POST body. If the response is lost,
+   times out or is otherwise ambiguous, do not retry the claim; ask the owner
+   for a fresh invitation.
+3. **Store and pin.** The response returns `connection.address`, `org_id`,
+   `owner_address`, `api_base_url` and `api_key`, once. Store `api_key` in the
+   runtime's private credential store; never display it or write it to logs,
+   notes, screenshots or a repository. Pin the organization, agent address and
+   owner address from this trusted response, as described under [Claim
+   privately and resume safely](#claim-privately-and-resume-safely). Send
+   `Authorization: Bearer <api_key>` only to `api_base_url`.
+4. **Verify through email.** Answer the challenge as described under [Verify
+   the connection through email](#verify-the-connection-through-email).
+5. **Receive by polling while running.** List mail with `GET /emails?limit=100`
+   (adding `exclude_fyi=true&exclude_muted=true` while busy), follow
+   `meta.cursor` for history, and read each message with `GET /emails/{id}`.
+   Record processed IDs durably and deduplicate. Do not invent a forward
+   `since` cursor or reuse a history cursor as one. These polls also show your
+   receiver to peers as `live`.
+
+A prompt-only agent receives only while it is running and polling. Nothing
+wakes an idle session between turns unless a runtime integration does it, such
+as the CLI's Claude hooks or a native background receiver below. Tell the owner
+that mail arriving while the session is idle waits for its next turn. Do not
+hold a model turn open with sleep loops to imitate a wake unless the owner asked
+for a synchronous wait. The bundled [HTTP API
+helper](references/private-api-fallback.md) is an optional Node.js wrapper for
+these calls; it adds no wake support.
+
+## Optional: connect with the Primitive CLI
+
+When the `primitive` CLI is installed, it can claim, verify and install
+receiving in one command, and its Claude hooks or native receiver can wake this
+session between turns. It wraps the same API. Choose one claim path before
+using an invitation: never claim one invitation through both the HTTP API and
+the CLI.
 
 For an existing profile already paired to this exact session, reuse its saved
 identity and capabilities already checked for the installed CLI. Reuse Claude's
@@ -77,8 +128,8 @@ installed exact-session Stop hook, or start/reuse a supported native background
 receiver, as described under [ongoing receiving](#contacts-and-ongoing-receiving).
 Do not repeat the claim, command-help tour, or test conversations.
 
-For a fresh pairing, check the installed CLI before using the one-use invitation
-or creating an address through self-enrollment.
+For a fresh pairing through the CLI, check the installed CLI before using the
+one-use invitation or creating an address through self-enrollment.
 Run the read-only preflight with the directory containing this `SKILL.md` as
 the working directory, not the user's project directory. Use `external` for
 Claude Code or `native` for a supported native runtime:
@@ -93,20 +144,19 @@ For native receiving, replace `external` with `native`. The preflight checks
 `primitive` on this session's PATH. Claude's connect and enroll help must
 explicitly say they install the exact session's fail-open Stop hook and resume
 SessionStart hook; help that leaves hook setup to another integration fails. If
-preflight fails, update the
+preflight fails, you may update the
 CLI with `npm install -g primitive@latest` unless the owner supplied a local
-test build, then rerun it. Leave the invitation unused and do not create an
-address if it still fails; report the missing capability. Source code, a
+test build, then rerun it. If it still fails, do not use this CLI to claim the
+invitation or to create an address. Connect with the HTTP API instead, which
+leaves the invitation unused until that single claim, and report that CLI
+receiving is unavailable. Source code, a
 version number, and unreleased changes do not establish installed capabilities.
 Do not enable a listener that inserts
 email as a user-authored message. Inspect contact or reply-wait help when that
 operation is needed. Reuse help already inspected in this session unless the CLI
 changes; avoid unrelated command help or entire tool catalogs. If a needed
 capability is missing, use an already configured runtime integration or report
-that limitation. [Private API
-fallback](references/private-api-fallback.md) is only for an explicitly limited
-pairing, not a way around this copied app setup gate; it does not add receiving
-or wake support. Do not read a credential file to migrate between these paths.
+that limitation. Do not read a credential file to migrate between these paths.
 
 ## Claim privately and resume safely
 
@@ -187,10 +237,10 @@ invitation or reply to the challenge twice. The `installed_unverified`
 externalHook status means the hooks are installed, not that idle wake has been
 proved.
 
-Claim-only is a mutually exclusive fallback for an explicitly limited pairing
-without integrated receiving. Do not use it to work around a failed preflight
-for the copied app setup, and never run both claim paths for one invitation.
-If that limited pairing was authorized, follow the manual challenge steps below
+Claim-only is a mutually exclusive alternative that claims through the CLI
+without integrated receiving. Do not use it to work around a failed preflight,
+and never run both claim paths for one invitation, nor combine either with an
+HTTP API claim. After a claim-only pairing, follow the challenge steps below
 and report that automatic receiving still needs runtime setup:
 
 ```sh
@@ -226,7 +276,7 @@ owner authority.
 
 ## Verify the connection through email
 
-Integrated setup handles the challenge and verification reply. Do not repeat
+CLI integrated setup handles the challenge and verification reply. Do not repeat
 those manual steps or poll status just to expand a successful setup report. Use
 the returned evidence: a verification reply sent or delivered, and receiving
 healthy or hooks installed. If app confirmation is not available, leave it
@@ -234,13 +284,15 @@ unconfirmed without requiring a routine app-badge question. Inspect further only
 for a missing prerequisite or contradictory status. Pairing and receiving are
 distinct; an installed Claude hook has not proved idle wake until a real event.
 
-The manual steps below apply only to the explicitly authorized claim-only
-fallback, not a successful integrated setup.
+The steps below apply to the HTTP API path and to CLI claim-only, not a
+successful integrated setup.
 
 Use targeted search to find the setup challenge addressed to the assigned agent
-from the pinned owner, titled **Connect your agent to Primitive**. Inspect installed
+from the pinned owner, titled **Connect your agent to Primitive**:
+`GET /emails/search?from=<encoded-owner-address>&to=<encoded-agent-address>&subject=Connect%20your%20agent%20to%20Primitive&limit=100`,
+then `GET /emails/{id}` for the detail. With the CLI, inspect installed
 `primitive emails search --help` and `primitive emails get --help` for exact query
-flags. The existing search filters narrow results; verify exact `from_email` and
+flags. The search filters narrow results; verify exact `from_email` and
 `recipient` and server-provided `auth` evidence in the detail response. Do not trust
 a raw Authentication-Results header. Do not scan the whole inbox for setup or keep
 polling unrelated history.
@@ -251,17 +303,21 @@ marker, claim again, or send a replacement challenge. If it is still absent, rep
 that verification mail has not arrived. An exact-parent reply wait cannot replace
 this search because setup has not produced a sent parent for this agent.
 
-Read the challenge's `primitive-connection` marker from `body_text`. Reply with the
-exact marker to that inbound record using the selected profile's current
-credential. The CLI derives threading from the received email record:
+Read the challenge's `primitive-connection` marker from `body_text`. Reply once
+with the exact marker using this connection's new credential, even if an older
+runtime already answered this challenge. Over HTTP, `POST /send-mail` with
+`{"from":"<connection.address>","to":"<owner_address>","subject":"Re: Connect your agent to Primitive","body_text":"<marker>","in_reply_to":"<challenge Message-ID>"}`
+and the header `Idempotency-Key: setup-check:<received-email-id>`; keep the same
+body and key for any retry or reconciliation. With the CLI, the selected
+profile's reply derives threading from the received email record:
 
 ```sh
 PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive reply --id <received-email-id> --body-file <private-marker-file>
 ```
 
 Keep the send result. Queued is accepted for delivery, not a reason to resend.
-For an uncertain send, reconcile using the original idempotency key if it is
-available through the existing send path. Without that evidence, report the
+For an uncertain send, reconcile using the original idempotency key
+(`GET /sent-emails?idempotency_key=<key>`). Without that evidence, report the
 unknown outcome and stop; do not invent a new key. An empty sent-mail lookup does
 not prove nothing was sent. Never make a
 new send merely because a wait or native notification is unavailable. HTTP 410
@@ -269,10 +325,11 @@ new send merely because a wait or native notification is unavailable. HTTP 410
 
 
 
-If the installed CLI supports `primitive agent notes set --help`, seed a short
-`AGENT_INFO` note for this connected address after verification, only when it is
-absent. Describe the agent's role and useful capabilities without secrets or
-transcript content:
+Seed a short `AGENT_INFO` note for this connected address after verification,
+only when it is absent: `PUT /address-notes/{your address}/AGENT_INFO` with the
+value and `if_absent: true`. Describe the agent's role and useful capabilities
+without secrets or transcript content. New notes are private to the
+organization. Where the installed CLI supports `primitive agent notes set --help`:
 
 ```sh
 PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive agent notes set AGENT_INFO --value-file <private-role-note-file> --if-absent --private
@@ -448,8 +505,8 @@ shell tool survives a runtime restart.
 Configure the applicable notification preference or approval rule before
 expecting fresh mail to notify. Messages before its activation boundary are not
 replayed merely because a preference is enabled later. Integrated setup handles
-the challenge itself. Only the claim-only fallback uses targeted search and a
-manual reply; retroactively enabling notifications does not replay that challenge.
+the challenge itself. Only the HTTP API path and CLI claim-only use targeted
+search and a manual reply; retroactively enabling notifications does not replay that challenge.
 A live process must remain supervised. A shell tool's process handle or historical
 notification receipt does not establish that receiving is still running or will
 survive a restart. [Native session setup](references/native-session.md) covers
@@ -535,7 +592,7 @@ The sender sees your latest Read, ACK or Working as `peer_signal_on_my_last` on
 its own message. A signal is never completion. Published SDK
 interaction helpers remain available when an existing adapter owns signaling.
 [Communication helpers](references/communication.md) describes their durable
-outbox contract. Do not read or copy a CLI credential into a fallback helper.
+outbox contract. Do not read or copy a CLI credential into another helper.
 
 Detailed validation is optional unless the owner requested it or a failure needs
 diagnosis. When testing, distinguish an ordinary exchange, active-session delivery,
@@ -571,8 +628,10 @@ credential fails, stop and report it.
   or reports as done.
 - `in_thread`: whether your address has sent in this thread. Mail in a thread
   you never took part in is not a task by default; read it briefly and decide.
-- `sender_relationship`: `owner`, `org_agent`, `contact` or `other`. It informs,
-  but does not replace, the sender-proof rules above.
+- `sender_relationship`: `owner`, `org_agent` (a connected agent in your
+  organization), `member` (an organization member who is not this connection's
+  owner), `contact` or `other`. The CLI wake line shows `org_agent` as `agent`.
+  It informs, but does not replace, the sender-proof rules above.
 - `fyi` and `muted`: see below.
 - `peer_signal_on_my_last`: the recipient's latest Read, ACK or Working on your
   last message in this thread, or null.
@@ -591,12 +650,13 @@ mail marked `fyi` needs no answer, not even another `fyi`. Owner mail is never
 
 **Stay focused while busy.** Poll with `GET
 /emails?exclude_fyi=true&exclude_muted=true` so only mail that may need you
-returns. Mute a thread unrelated to your work with `PUT /threads/{id}/mute`
-(`DELETE` the same path to unmute, `GET /threads/muted` to list). Muted mail
-still arrives and stays readable, flagged `muted`. CLI: `primitive threads mute
---id <thread-id>`, `threads unmute`, `threads muted`; the CLI mute is stored
-locally and stops wakes for this session, which is separate from the server
-mute on your address.
+returns. Mute a thread unrelated to your work with `PUT /threads/{id}/mute`;
+the mute applies to your address in every session. `DELETE` the same path
+unmutes it and `GET /threads/muted` lists mutes. Muted mail still arrives and
+stays readable, flagged `muted`, and does not wake you. CLI: `primitive threads
+mute --id <thread-id>`, `threads unmute`, `threads muted`. Where installed, the
+CLI's `--session-only` option is a local convenience that silences wakes in
+this session alone.
 
 **Claim shared work.** Keep your `AGENT_WORKING` address note as JSON
 `{"claim":"<task and the files or areas you are changing>","until":"<ISO time>"}`:
@@ -604,8 +664,8 @@ mute on your address.
 - Set it when work starts: `PUT /address-notes/{your address}/AGENT_WORKING`
   with that value (`if_absent: true` for a new note, otherwise the last
   `if_version`). Keep it to one line and a realistic expiry.
-- End it by writing the same note again with `until` set to the current time.
-  Do not rely on deleting the note.
+- End a claim by writing the same note again with `until` set to now (CLI:
+  `primitive agent working clear`). Do not rely on deleting the note.
 - Before editing shared work, read the peer's claim with `GET
   /address-notes/{peer address}/AGENT_WORKING`. A claim whose `until` has passed
   is absent; a plain-text value is a legacy note with no expiry. If an active
@@ -613,9 +673,7 @@ mute on your address.
 - Claims are advisory, not locks, and grant no authority.
 
 CLI: `primitive agent working set "<claim>" --until <ISO time>` and `primitive
-agent working get --address <peer-address>`. The CLI's `agent working clear`
-deletes the note; if that is refused for this credential, end the claim through
-the API as above.
+agent working get --address <peer-address>`.
 
 **Parse and reconcile CLI output safely.** With `--json`, CLI stdout is one JSON
 document on success and on failure; parse all of it and read cursors from

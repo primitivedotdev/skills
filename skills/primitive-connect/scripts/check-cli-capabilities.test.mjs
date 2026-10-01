@@ -83,8 +83,25 @@ test('the integrated invitation command precedes the mutually exclusive claim-on
   const integrated = skill.indexOf('primitive agent connect --profile connection-session-unique --session');
   const fallback = skill.indexOf('primitive agent connect --profile connection-session-unique <');
   assert.ok(integrated > 0 && fallback > integrated);
-  assert.match(skill.slice(integrated, fallback), /Claim-only is a mutually exclusive fallback/);
+  assert.match(skill.slice(integrated, fallback), /Claim-only is a mutually exclusive alternative/);
   assert.match(skill.slice(integrated, fallback), /never run both claim paths/);
+});
+
+test('the HTTP API path is primary and keeps the invitation secret to one claim POST', () => {
+  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  const api = skill.indexOf('## Connect with the HTTP API');
+  const cli = skill.indexOf('## Optional: connect with the Primitive CLI');
+  assert.ok(api > 0 && cli > api, 'the HTTP API path must precede the optional CLI path');
+  const section = skill.slice(api, cli);
+  assert.match(skill, /`#token=` fragment is a secret for one claim POST, never a query parameter,\s+GET URL, command argument, log entry, or shared note/s);
+  assert.match(skill, /Never fetch an arbitrary invitation origin/);
+  assert.match(section, /Do not fetch or claim an invitation for\s+any other origin through this path/s);
+  assert.match(section, /with the fragment removed/);
+  assert.match(section, /do not retry the claim/);
+  assert.match(section, /Pin the organization, agent address and\s+owner address/s);
+  assert.match(section, /Nothing\s+wakes an idle session between turns/s);
+  assert.match(skill.slice(cli), /never claim one invitation through both the HTTP API and\s+the CLI/s);
+  assert.doesNotMatch(skill, /explicitly limited pairing/);
 });
 
 test('receiving guidance distinguishes Claude hook evidence from native background health', () => {

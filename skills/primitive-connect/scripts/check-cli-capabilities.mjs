@@ -40,7 +40,7 @@ if (receiver !== 'native' && receiver !== 'external') {
   }
 
   if (missing.length) {
-    process.stderr.write(`Primitive CLI preflight failed: ${missing.join('; ')}. Do not claim the invitation or create an address. Install a CLI build with these capabilities and run this check again.\n`);
+    process.stderr.write(`Primitive CLI preflight failed: ${missing.join('; ')}. Do not claim the invitation or create an address with this CLI. Install a CLI build with these capabilities and run this check again, or connect with the HTTP API instead.\n`);
     process.exitCode = 1;
   } else {
     process.stdout.write(`Primitive CLI preflight passed for ${receiver} receiving and peer discovery.\n`);

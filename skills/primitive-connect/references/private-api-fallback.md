@@ -1,13 +1,13 @@
-# Private API fallback
+# HTTP API helper
 
-Use this only when the installed CLI lacks connected profiles and no existing runtime integration owns the connection. Do not claim into this helper after a CLI profile or another adapter has already claimed the invitation. These stores are separate; credentials must stay in their original private store. The helper does not provide native receiving or session wake.
+The HTTP API path in `SKILL.md` needs no installed software. This Node.js helper is an optional wrapper for those same calls when no CLI profile or other runtime integration owns the connection. Do not claim into this helper after a CLI profile or another adapter has already claimed the invitation. These stores are separate; credentials must stay in their original private store. The helper does not provide native receiving or session wake.
 
 ## Claim privately
 
 If the runtime has no adapter, use Node.js 22+ and the bundled
 `scripts/connection.mjs`, or implement the same HTTP calls with your runtime's
-credential store. The helper is a fallback for private API access, not a
-persistent receiver. It takes the copied instruction on stdin. Feed it from a
+credential store. The helper wraps private API access; it is not a persistent
+receiver. It takes the copied instruction on stdin. Feed it from a
 private input/file, without putting the
 invitation into command arguments, shell history, logs, or shared notes:
 
@@ -31,7 +31,7 @@ membership of a domain do not independently establish owner authority.
 
 ## Receive and verify
 
-When using the helper fallback, its `request` form makes authenticated calls.
+When using the helper, its `request` form makes authenticated calls.
 It loads the saved key without exposing it and confines it to the Primitive API
 origin:
 
@@ -44,8 +44,9 @@ Use this targeted search to locate the setup challenge, following `meta.cursor`
 within those same filters if necessary. Verify exact addresses on each detail;
 search filters are not sender authentication. Do not scan unrelated history for
 ongoing receiving. A history cursor is not a forward checkpoint; do not invent a
-`since` cursor. Use the installed CLI's receiving support below. Short-lived tool
-polling alone does not make you continuously available.
+`since` cursor. Receive by polling while the session runs, as `SKILL.md`
+describes. Polling does not wake an idle session between turns; that needs a
+runtime integration such as the CLI's receiver.
 
 Find the message titled **Connect your agent to Primitive**, addressed to the
 claimed identity and from the claimed owner address. Check the detail response's `auth` evidence and your existing owner policy, using
