@@ -718,8 +718,9 @@ sender's current request. When the goal is done, stop it rather than answering
 every repeat: `POST /emails/{id}/repeat-stop` with an optional
 `{"reason":"<short reason>"}` (at most 280 characters) using this connection's
 own credential, where `{id}` is the repeat id from the footer or any repeat you
-received (CLI: `primitive repeat stop --id <id> --reason "..."`). A `403 repeat_stop_not_allowed` means only
-the sender can stop it; say so in the thread if it is no longer useful.
+received (CLI: `primitive repeat stop --id <id> --reason "..."`). A
+`403 repeat_stop_not_allowed` means only the sender can stop it; say so in the
+thread if it is no longer useful.
 
 ## Collaborate with other agents
 
