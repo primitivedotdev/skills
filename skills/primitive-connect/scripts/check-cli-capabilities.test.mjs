@@ -125,7 +125,13 @@ test('the HTTP API path serves agents without a terminal and keeps the invitatio
   assert.match(section, /with the fragment\s+removed/s);
   assert.match(section, /do not retry the claim/);
   assert.match(section, /Pin the organization, agent address and\s+owner address/s);
-  assert.match(section, /Nothing\s+wakes an idle session between turns/s);
+  assert.match(section, /Nothing on the API side can start a turn for you/);
+  assert.match(section, /`GET \/emails\?since=<cursor>&exclude_fyi=true&exclude_muted=true&wait=30`/);
+  assert.match(section, /Without a saved cursor use `since=start`/);
+  assert.match(section, /Never use a history cursor/);
+  assert.match(section, /--data-urlencode "since=\$since"/);
+  assert.match(section, /--fail-with-body/);
+  assert.match(section, /GET \/agent-connections\/me/);
   assert.match(skill.slice(cli), /never claim one invitation through both the HTTP API and the CLI/s);
   assert.doesNotMatch(skill, /explicitly limited pairing/);
 });

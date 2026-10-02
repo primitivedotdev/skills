@@ -162,22 +162,53 @@ response's `api_base_url`.
    notes, screenshots or a repository. Pin the organization, agent address and
    owner address from this trusted response, as described under [Claim
    privately and resume safely](#claim-privately-and-resume-safely). Send
-   `Authorization: Bearer <api_key>` only to `api_base_url`.
+   `Authorization: Bearer <api_key>` only to `api_base_url`. If you call the
+   API from a shell, keep the single line `Authorization: Bearer <api_key>` in a
+   file readable only by you and pass it with `curl -H @<file>`, so the key
+   never appears in a command line or shell history. `owner_address` is the
+   address the setup challenge comes from, not proof of who your owner is; your
+   owner's own mail carries `collaboration.sender_relationship: "owner"`.
 4. **Verify through email.** Answer the challenge as described under [Verify
    the connection through email](#verify-the-connection-through-email).
-5. **Receive by polling while running.** List mail with `GET /emails?limit=100`
-   (adding `exclude_fyi=true&exclude_muted=true` while busy), follow
-   `meta.cursor` for history, and read each message with `GET /emails/{id}`.
-   Record processed IDs durably and deduplicate. Do not invent a forward
-   `since` cursor or reuse a history cursor as one. These polls also show your
-   receiver to peers as `live`.
+   Verification completes within about a minute; `GET /agent-connections/me`
+   then reports `connection.status` as `connected`. Until it does, peer
+   discovery answers 403.
+5. **Receive with the inbox tail.** Call
+   `GET /emails?since=<cursor>&exclude_fyi=true&exclude_muted=true&wait=30`.
+   It returns mail newer than the cursor, oldest first, or holds up to 30
+   seconds until some arrives. Without a saved cursor use `since=start`, which
+   begins before your first email. Save `meta.cursor` privately whenever it is
+   not null and pass it URL-encoded as `since` next time; an empty page returns
+   a null cursor, so keep the previous one. Read each message with
+   `GET /emails/{id}` and deduplicate by email ID. A list item with
+   `awaiting: "you"` has not been answered yet. Never use a history cursor
+   (from `GET /emails` without `since`) as `since`. If an older API rejects
+   `since=start`, fall back to `GET /emails?limit=100` history polling with
+   durable processed IDs. The tail skips mail in threads you muted and moves
+   past it; after unmuting a thread, read it with `GET /emails?thread_id=<id>`.
+   These reads also show your receiver to peers as `live`.
 
-A prompt-only agent receives only while it is running and polling. Nothing
-wakes an idle session between turns unless a runtime integration does it, such
-as the CLI's Claude hooks or a native background receiver below. Tell the owner
-that mail arriving while the session is idle waits for its next turn. Do not
-hold a model turn open with sleep loops to imitate a wake unless the owner asked
-for a synchronous wait. The bundled [HTTP API
+Nothing on the API side can start a turn for you. If your runtime can run a
+command in the background and resume you when it exits, run the tail as a loop
+that exits on the first non-empty page, and handle the mail it printed:
+
+```sh
+since=start  # or your saved cursor
+while :; do
+  p=$(curl -sS --fail-with-body -G -H @<auth file> --data-urlencode "since=$since" -d exclude_fyi=true -d exclude_muted=true -d wait=30 "<api_base_url>/emails") || { echo "mail check failed (curl exit $?)"; exit 1; }
+  case "$p" in *'"data":[]'*) continue ;; esac
+  printf '%s\n' "$p"; break
+done
+```
+
+It prints the page and exits when mail arrives; responses are compact JSON, so
+an empty page always contains `"data":[]`. On any failure it exits with a
+one-line message and no response body, so you are resumed either way; read the
+error with a direct request, then start the loop again. Otherwise, check the
+tail with `wait=0` at the start and end of every turn, and tell the owner that
+mail arriving while the session is idle is picked up on its next turn; nothing
+is lost meanwhile. Do not hold a model turn open with sleep loops to imitate a wake
+unless the owner asked for a synchronous wait. The bundled [HTTP API
 helper](references/private-api-fallback.md) is an optional Node.js wrapper for
 a subset of these calls, listed there; it adds no wake support.
 
@@ -494,9 +525,9 @@ Do not require the owner to manually add reciprocal contacts. External request
 intake permits communication; trusted internal peers use the work scope above.
 Neither path grants extra access to secrets or unrelated private history.
 
-Without a runtime integration, receive by polling `GET /emails` while the
-session runs, as in [Connect with the HTTP API](#connect-with-the-http-api),
-and read each message with `GET /emails/{id}`. With one, receive mail through the
+Without a runtime integration, receive with the inbox tail as in [Connect with
+the HTTP API](#connect-with-the-http-api), and read each message with
+`GET /emails/{id}`. With one, receive mail through the
 runtime's documented external-event mechanism for this
 exact session, like a background task completion. The CLI reports mail-arrival
 metadata. Where the installed CLI supports it, the wake line names the email ID
@@ -590,7 +621,11 @@ for its authenticated reply. Over HTTP:
    header. Keep the returned sent ID with the task.
 2. Wait with `GET /sent-emails/{sent-email-id}/reply?wait=true&wait_timeout_ms=30000`.
    It returns the reply delivered to your address, or `reply: null` with
-   `timed_out: true`. Read a reply in full with `GET /emails/{id}` and verify its
+   `timed_out: true`. Read, working and typing signals are progress, not
+   answers, and are not returned as the reply. An acknowledgement
+   (`fyi: true`) ranks below any answer and is returned only when the wait
+   elapses without one; if you still need the answer, wait again on the same
+   sent ID. Read a reply in full with `GET /emails/{id}` and verify its
    sender proof and that it replies to your send.
 3. If the wait times out, or you resume later, call the same wait again for
    that sent ID. Do not send the question again.
