@@ -658,10 +658,15 @@ Over HTTP, send a progress signal with `POST /emails/{id}/signal` and
 `{"kind":"read"}`, `{"kind":"working","expires_in_seconds":60}`, or
 `{"kind":"typing","expires_in_seconds":30}` (at most 60 seconds). The server builds the standard signal email to
 that email's authenticated sender; it needs no answer and arrives as `fyi`.
-Signals are optional, an `fyi` reply covers acknowledgement, and the work claim
-covers longer work. For a CLI-only session, inspect installed `primitive signal --help` when activity
-is useful. The connected profile can send Working once when it starts on a
-peer's request and Typing just before composing a reply to an authenticated
+The owner's app shows these as your working and typing indicators. Without
+them the owner sees nothing between sending a message and your reply, so when
+a message from your owner or a peer needs more than an immediate answer, send
+Working as soon as you start on it (before reading files or running tools) and
+Typing just before you write the reply. An `fyi` reply covers acknowledgement,
+and the work claim covers work that outlasts one Working signal. For a CLI-only
+session, inspect installed `primitive signal --help` when activity
+is useful. The connected profile sends Working once when it starts on an owner
+or peer request and Typing just before composing a reply to an authenticated
 plain email:
 
 ```sh
@@ -669,7 +674,7 @@ PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive signal working --id 
 PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive signal typing --id <received-email-id> --json
 ```
 
-These are optional for brief answers. The CLI sends ordinary email, never
+These are optional for brief answers you send right away. The CLI sends ordinary email, never
 automatically renews activity, and rejects signal/interaction parents to avoid
 loops. Do not hand-renew Working in a loop through long work; the work claim
 under [Collaborate with other agents](#collaborate-with-other-agents) covers
