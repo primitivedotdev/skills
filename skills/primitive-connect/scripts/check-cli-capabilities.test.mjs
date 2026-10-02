@@ -83,8 +83,27 @@ test('the integrated invitation command precedes the mutually exclusive claim-on
   const integrated = skill.indexOf('primitive agent connect --profile connection-session-unique --session');
   const fallback = skill.indexOf('primitive agent connect --profile connection-session-unique <');
   assert.ok(integrated > 0 && fallback > integrated);
-  assert.match(skill.slice(integrated, fallback), /Claim-only is a mutually exclusive fallback/);
+  assert.match(skill.slice(integrated, fallback), /Claim-only is a mutually exclusive alternative/);
   assert.match(skill.slice(integrated, fallback), /never run both claim paths/);
+});
+
+test('the HTTP API path is primary and keeps the invitation secret to one claim POST', () => {
+  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  const api = skill.indexOf('## Connect with the HTTP API');
+  const cli = skill.indexOf('## Optional: connect with the Primitive CLI');
+  assert.ok(api > 0 && cli > api, 'the HTTP API path must precede the optional CLI path');
+  const section = skill.slice(api, cli);
+  assert.match(skill, /`#token=` fragment is a secret for one claim POST, never a query parameter,\s+GET URL, command argument, log entry, or shared note/s);
+  assert.match(skill, /Never fetch an arbitrary invitation origin/);
+  assert.match(section, /only\s+request allowed before validation is a GET of the fixed list\s+`https:\/\/api\.primitive\.dev\/v1\/agent-connections\/trusted-origins`/s);
+  assert.match(section, /`https` origin that appears exactly in that list\. Otherwise fetch nothing\s+from the invitation's origin and ask the owner for a fresh invitation/s);
+  assert.match(section, /Claim once, on that same origin/);
+  assert.match(section, /with the fragment\s+removed/s);
+  assert.match(section, /do not retry the claim/);
+  assert.match(section, /Pin the organization, agent address and\s+owner address/s);
+  assert.match(section, /Nothing\s+wakes an idle session between turns/s);
+  assert.match(skill.slice(cli), /never claim one invitation through both the HTTP API and\s+the CLI/s);
+  assert.doesNotMatch(skill, /explicitly limited pairing/);
 });
 
 test('receiving guidance distinguishes Claude hook evidence from native background health', () => {
@@ -129,4 +148,26 @@ test('CLI-only agents get the installed ordinary-email activity commands', () =>
   assert.match(skill, /primitive signal typing --id <received-email-id> --json/);
   assert.match(skill, /optional for brief answers/);
   assert.match(skill, /rejects signal\/interaction parents to avoid\s+loops/s);
+});
+
+test('HTTP contact requests prepare first and keep the contact policy rules', () => {
+  const contacts = readFileSync(new URL('../references/contact-requests.md', import.meta.url), 'utf8');
+  assert.match(contacts, /POST \/contact-requests\/prepare/);
+  assert.match(contacts, /Nothing is sent by the prepare call, and it changes no contact preferences/);
+  assert.match(contacts, /never send with a new key/);
+  assert.match(contacts, /POST\s+\/contact-requests\/accept\/prepare/s);
+  assert.match(contacts, /never use it to override explicit silence/);
+  assert.match(contacts, /Explicit per-agent contact silence wins/);
+  assert.match(contacts, /Never respond to an acceptance with another acceptance/);
+  assert.match(contacts, /Do not switch to an owner's credentials/);
+});
+
+test('work claims stay out of command arguments and use the expiring JSON form', () => {
+  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  assert.match(skill, /never pass it as a command argument/);
+  assert.doesNotMatch(skill, /agent working set "/);
+  assert.match(skill, /--value-file <private-claim-json-file>/);
+  const network = readFileSync(new URL('../../primitive-network/SKILL.md', import.meta.url), 'utf8');
+  assert.match(network, /"until":"<ISO time>"/);
+  assert.match(network, /--value-file <private-claim-json-file>/);
 });

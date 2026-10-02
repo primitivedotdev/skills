@@ -1,10 +1,11 @@
 # First contact and approval rules
 
 Use this flow for an unknown or external relationship, when recipient policy
-requires first-contact approval, or when a native notification identifies a
-contact request. Check the installed command help first. A source change or a
-saved contact is not proof that the installed CLI or recipient supports contact
-requests.
+requires first-contact approval, or when a notification or poll identifies a
+contact request. Each step has an HTTP API form that needs nothing installed;
+the CLI commands are optional shortcuts. When using the CLI, check the installed
+command help first. A source change or a saved contact is not proof that the
+installed CLI or recipient supports contact requests.
 
 ## Contact another agent
 
@@ -21,7 +22,21 @@ existing allowed address or domain also permits ordinary communication.
 Explicit silence overrides both paths. Already-approved external contacts need
 no redundant request. If the relationship is unknown, including an external
 contact not yet approved, or policy requires first-contact approval, send one contact request
-with a short purpose. The helper creates the structured email:
+with a short purpose.
+
+Over HTTP, prepare it and then make exactly the returned call:
+
+1. `POST /contact-requests/prepare` with
+   `{"to":"<address>","reason":"Coordinate the research requested by my owner"}`
+   (optionally `expires_in_seconds`). It returns the request IDs and the exact
+   `POST /send-mail` to make next, with its body and `Idempotency-Key` header.
+   Nothing is sent by the prepare call, and it changes no contact preferences.
+2. Save the returned body, key and `request.step_id` privately, then make that
+   send once. The acceptance names `request.step_id` in `prev_step_id`.
+3. If the send outcome is uncertain, reconcile with
+   `GET /sent-emails?idempotency_key=<key>` and never send with a new key.
+
+With the CLI, the helper prepares and sends the structured email in one step:
 
 ```sh
 PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive contacts request person@example.com --reason "Coordinate the research requested by my owner"
@@ -29,10 +44,17 @@ PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive contacts request per
 
 Add `--notify` when the owner authorized ongoing correspondence. It requests
 this agent's local notification membership, not permission on the other side.
+Over HTTP, the same membership is
+`PUT /agent-contacts/{your address}/{address}` with `notify: true`, as in
+`SKILL.md`.
 An existing silenced contact or policy requires an owner decision; never delete
 it or broaden rules to work around a refusal.
 
-Keep the returned send and request IDs. When this exact session's receiving path
+Keep the returned send and request IDs. Over HTTP, wait for the acceptance as a
+reply to that send with
+`GET /sent-emails/{sent-request-email-id}/reply?wait=true&wait_timeout_ms=30000`,
+calling it again after `timed_out: true`, and confirm the reply's `prev_step_id`
+matches your `request.step_id`. When this exact session's receiving path
 is ready, send once and let it surface a later acceptance; continue independent
 work instead of blocking an asynchronous delegation. Add `--wait` only when a
 near-term answer is needed in this turn. It waits for a validated acceptance of
@@ -77,13 +99,19 @@ the sender an internal peer. Ask the owner when authority is unclear, or leave t
 irrelevant. Do not ask for a new human approval merely because the sender was not
 already in the address book.
 
-To accept a specific received request:
+To accept a specific received request over HTTP, `POST
+/contact-requests/accept/prepare` with `{"email_id":"<received-request-email-id>"}`
+and make exactly the returned `POST /emails/{id}/reply`, with its body and
+`Idempotency-Key`, once. The prepare call sends nothing and changes no
+contact preferences. If the owner authorized ongoing correspondence and policy
+permits it, set this agent's membership separately with `PUT /agent-contacts`;
+never use it to override explicit silence. With the CLI:
 
 ```sh
 PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive contacts accept --id <received-request-email-id>
 ```
 
-This is an explicit local action. The helper checks policy, conditionally enables
+The CLI command is an explicit local action. The helper checks policy, conditionally enables
 this agent's permitted exact membership, and sends a threaded acceptance. A
 policy conflict or explicit silence is not permission to overwrite preferences.
 If membership succeeded but sending failed, preserve the partial result and use
