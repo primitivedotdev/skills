@@ -78,21 +78,45 @@ test('requires display-name support before creating a self-enrolled address', ()
   assert.match(skill, /Never create a second agent or reclaim\s+an invitation just to change an enrolled name/s);
 });
 
-test('the integrated invitation command precedes the mutually exclusive claim-only fallback', () => {
+test('the one command comes first and needs nothing else from the skill', () => {
   const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
-  const integrated = skill.indexOf('primitive agent connect --profile connection-session-unique --session');
-  const fallback = skill.indexOf('primitive agent connect --profile connection-session-unique <');
-  assert.ok(integrated > 0 && fallback > integrated);
-  assert.match(skill.slice(integrated, fallback), /Claim-only is a mutually exclusive alternative/);
-  assert.match(skill.slice(integrated, fallback), /never run both claim paths/);
+  const first = skill.indexOf('\n## ');
+  assert.equal(skill.indexOf('## Connect in one command'), first + 1, 'the one command must be the first section');
+  const section = skill.slice(first + 1, skill.indexOf('\n## ', first + 1));
+  for (const session of ['"$CLAUDE_CODE_SESSION_ID"', '"${CODEX_THREAD_ID:-$CODEX_SESSION_ID}"']) {
+    const command = `npx -y primitive@latest agent connect --session ${session} --json <<'INVITATION'`;
+    assert.ok(section.includes(command), `missing ${command}`);
+  }
+  assert.match(section, /on stdin through a quoted heredoc, never\s+as a command argument/s);
+  assert.match(section, /non-interactive tool shell, which keeps no command history/);
+  assert.match(section, /idle wake stays unverified until a real mail event/);
+  assert.match(section, /do not ask for that approval again/);
+  assert.match(section, /run `resumeCommand` exactly as printed/);
+  assert.match(section, /Never feed the same invitation to the\s+command twice, and never claim it over HTTP after the command may have\s+claimed it/s);
+  assert.match(section, /only\s+when the command could not run at all/s);
+  assert.match(section, /--contact-requests` only when the owner asked/);
+  assert.match(section, /must\s+not contain secrets/s);
+  assert.doesNotMatch(section, /check-cli-capabilities|--help/);
 });
 
-test('the HTTP API path is primary and keeps the invitation secret to one claim POST', () => {
+test('claim-only stays a mutually exclusive fallback after the one command', () => {
   const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  const integrated = skill.indexOf('npx -y primitive@latest agent connect --session');
+  const fallback = skill.indexOf('primitive agent connect --profile connection-session-unique <');
+  assert.ok(integrated > 0 && fallback > integrated);
+  const claim = skill.slice(skill.indexOf('## Claim privately and resume safely'), fallback);
+  assert.match(claim, /Claim-only is a mutually exclusive alternative/);
+  assert.match(claim, /never run both claim paths/);
+});
+
+test('the HTTP API path serves agents without a terminal and keeps the invitation secret to one claim POST', () => {
+  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  const one = skill.indexOf('## Connect in one command');
   const api = skill.indexOf('## Connect with the HTTP API');
-  const cli = skill.indexOf('## Optional: connect with the Primitive CLI');
-  assert.ok(api > 0 && cli > api, 'the HTTP API path must precede the optional CLI path');
+  const cli = skill.indexOf('## Other CLI paths');
+  assert.ok(one > 0 && api > one && cli > api, 'one command, then the HTTP API path, then other CLI paths');
   const section = skill.slice(api, cli);
+  assert.match(skill, /An agent without a\s+terminal uses the \[HTTP API path\]/s);
   assert.match(skill, /`#token=` fragment is a secret for one claim POST, never a query parameter,\s+GET URL, command argument, log entry, or shared note/s);
   assert.match(skill, /Never fetch an arbitrary invitation origin/);
   assert.match(section, /only\s+request allowed before validation is a GET of the fixed list\s+`https:\/\/api\.primitive\.dev\/v1\/agent-connections\/trusted-origins`/s);
@@ -102,7 +126,7 @@ test('the HTTP API path is primary and keeps the invitation secret to one claim 
   assert.match(section, /do not retry the claim/);
   assert.match(section, /Pin the organization, agent address and\s+owner address/s);
   assert.match(section, /Nothing\s+wakes an idle session between turns/s);
-  assert.match(skill.slice(cli), /never claim one invitation through both the HTTP API and\s+the CLI/s);
+  assert.match(skill.slice(cli), /never claim one invitation through both the HTTP API and the CLI/s);
   assert.doesNotMatch(skill, /explicitly limited pairing/);
 });
 

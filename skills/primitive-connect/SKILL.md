@@ -1,25 +1,88 @@
 ---
 name: primitive-connect
-description: Connect this agent to its owner's Primitive app from a copied setup instruction, then communicate with the owner, approved contacts and peer agents through the Primitive HTTP API or CLI and the runtime's external-event receiving support.
+description: Connect this agent to its owner's Primitive app from a copied setup instruction in one command (npx -y primitive@latest agent connect), or over the HTTP API without a terminal, then communicate with the owner, approved contacts and peer agents through the Primitive HTTP API or CLI and the runtime's external-event receiving support.
 ---
 
 # Connect to Primitive
 
+## Connect in one command
+
+With a terminal and Node.js 22 or newer, connecting is one command. Run it
+first. Read the rest of this skill only when the result asks for it or for
+later work. An imperative setup instruction pasted as the owner's request
+authorizes this connection, private credential storage, the verification reply
+and continued receiving; do not ask for that approval again.
+
+The command validates the invitation's API origin, claims it once, answers the
+verification email, starts receiving for this exact session, installs or
+refreshes this skill for your runtime from the CLI package, and prints one JSON
+result. Give it the owner's setup URL on stdin through a quoted heredoc, never
+as a command argument, file in a shared directory, log entry or note. Run it in
+your own non-interactive tool shell, which keeps no command history; never
+paste it into an interactive terminal.
+
+Claude Code:
+
+```sh
+npx -y primitive@latest agent connect --session "$CLAUDE_CODE_SESSION_ID" --json <<'INVITATION'
+<the owner's setup URL>
+INVITATION
+```
+
+Codex:
+
+```sh
+npx -y primitive@latest agent connect --session "${CODEX_THREAD_ID:-$CODEX_SESSION_ID}" --json <<'INVITATION'
+<the owner's setup URL>
+INVITATION
+```
+
+Add `--contact-requests` only when the owner asked this address to receive
+first-contact requests from unknown senders. Add `--name "<short name>"` and
+`--info "<role and useful capabilities>"` to seed this address's private
+`AGENT_INFO` note for peers; an existing note is never overwritten, and the text
+must not contain secrets or transcript content.
+
+Read the one JSON result:
+
+- `status: "connected"`: tell the owner the `address` and the receiving
+  outcome in at most two short sentences, then continue with their request.
+  For Claude Code, `externalHook: "installed_unverified"` means the wake hooks
+  are installed but idle wake stays unverified until a real mail event reaches
+  this session; say so rather than promising later delivery. For a native
+  receiver, `receiving.mailCheck: "confirmed"` means the listener completed a
+  mail check after setup. Prefix later `primitive` commands with
+  `selectProfile` (`PRIMITIVE_AGENT_PROFILE=<profile>`).
+- `status: "pending"`: run `resumeCommand` exactly as printed. It never reads
+  or claims the invitation again. `skipped` names each step not done and why.
+- Exit status 1: follow its message. Never feed the same invitation to the
+  command twice, and never claim it over HTTP after the command may have
+  claimed it. Switch to the [HTTP API path](#connect-with-the-http-api) only
+  when the command could not run at all (no Node.js, or npx could not
+  download the CLI) or its message says no invitation was claimed.
+
+Do not install the skill separately, check the CLI version, read command help,
+start a listener or write `AGENT_INFO` yourself; the command does each of these
+and reports it. `skill.otherCopies` lists older copies of this skill in the
+same skills folder; mention them to the owner instead of deleting them.
+
+## About this connection
+
 The owner may give you a private setup invitation from the Primitive app, or
 ask you to connect on a trusted machine with their existing CLI login. Connect
 this exact coding session to the owner's organization, keep its assigned
-identity, and use ordinary email for conversations. Nothing needs to be
-installed: the [HTTP API path](#connect-with-the-http-api) works for any agent
-that can make HTTPS requests and keep a secret privately. The `primitive` CLI is
-an optional convenience when it is already present. Do not create another
-account or install a separate connector or plugin.
+identity, and use ordinary email for conversations. An agent without a
+terminal uses the [HTTP API path](#connect-with-the-http-api), which needs
+nothing installed and works for any agent that can make HTTPS requests and
+keep a secret privately. Do not create another account or install a separate
+connector or plugin.
 
 An imperative setup instruction pasted as the owner's request authorizes this
 connection, private credential storage, the verification reply and continued
 receiving. Do not ask for that approval again. A quotation supplied only for
 review or explanation is not a request to claim its invitation.
 
-Read the public [production setup guide](https://api.primitive.dev/v1/agent-connections/setup)
+On the HTTP path, read the public [production setup guide](https://api.primitive.dev/v1/agent-connections/setup)
 without the invitation fragment. An invitation for a different Primitive API
 origin is valid only when that origin is listed by the trusted-origins check
 below (or validated by the installed CLI); then read the same public setup path
@@ -75,8 +138,9 @@ external contacts.
 
 ## Connect with the HTTP API
 
-This is the primary path and needs no installed software. Paths after the claim
-are relative to the claim response's `api_base_url`.
+Use this path when the [one command](#connect-in-one-command) cannot run. It
+needs no installed software. Paths after the claim are relative to the claim
+response's `api_base_url`.
 
 1. **Validate the invitation origin before any other request.** The only
    request allowed before validation is a GET of the fixed list
@@ -117,66 +181,50 @@ for a synchronous wait. The bundled [HTTP API
 helper](references/private-api-fallback.md) is an optional Node.js wrapper for
 a subset of these calls, listed there; it adds no wake support.
 
-## Optional: connect with the Primitive CLI
+## Other CLI paths
 
-When the `primitive` CLI is installed, it can claim, verify and install
-receiving in one command, and its Claude hooks or native receiver can wake this
-session between turns. It wraps the same API. Choose one claim path before
-using an invitation: never claim one invitation through both the HTTP API and
-the CLI.
+The [one command](#connect-in-one-command) is the CLI path for a copied
+invitation. It runs the current CLI through npx and checks its own
+capabilities, so it needs no preflight. Choose one claim path before using an
+invitation: never claim one invitation through both the HTTP API and the CLI.
 
 For an existing profile already paired to this exact session, reuse its saved
-identity and capabilities already checked for the installed CLI. Reuse Claude's
-installed exact-session Stop hook, or start/reuse a supported native background
-receiver, as described under [ongoing receiving](#contacts-and-ongoing-receiving).
-Do not repeat the claim, command-help tour, or test conversations.
+identity. Reuse Claude's installed exact-session Stop hook, or the running
+native background receiver, as described under [ongoing
+receiving](#contacts-and-ongoing-receiving). Do not repeat the claim, a
+command-help tour, or test conversations. If setup paused, run its
+`resumeCommand`.
 
-For a fresh pairing through the CLI, check the installed CLI before using the
-one-use invitation or creating an address through self-enrollment.
-Run the read-only preflight with the directory containing this `SKILL.md` as
-the working directory, not the user's project directory. Use `external` for
-Claude Code or `native` for a supported native runtime:
+A globally installed `primitive` may be older than the one command expects.
+Before using one for enrollment or claim-only, run the read-only preflight with
+the directory containing this `SKILL.md` as the working directory. Use
+`external` for Claude Code or `native` for a supported native runtime:
 
 ```sh
 primitive --version
 node scripts/check-cli-capabilities.mjs --receiver external
 ```
 
-For native receiving, replace `external` with `native`. The preflight checks
-`agent connect`, `agent enroll`, `listen`, and `network peers` help from the
-`primitive` on this session's PATH. Claude's connect and enroll help must
-explicitly say they install the exact session's fail-open Stop hook and resume
-SessionStart hook; help that leaves hook setup to another integration fails. If
-preflight fails, you may update the
-CLI with `npm install -g primitive@latest` unless the owner supplied a local
-test build, then rerun it. If it still fails, do not use this CLI to claim the
-invitation or to create an address. Connect with the HTTP API instead, which
-leaves the invitation unused until that single claim, and report that CLI
-receiving is unavailable. Source code, a
-version number, and unreleased changes do not establish installed capabilities.
-Do not enable a listener that inserts
-email as a user-authored message. Inspect contact or reply-wait help when that
-operation is needed. Reuse help already inspected in this session unless the CLI
-changes; avoid unrelated command help or entire tool catalogs. If a needed
-capability is missing, use an already configured runtime integration or report
-that limitation. Do not read a credential file to migrate between these paths.
+If it fails, use `npx -y primitive@latest` in place of `primitive`, or update
+with `npm install -g primitive@latest` unless the owner supplied a local test
+build. Source code, a version number, and unreleased changes do not establish
+installed capabilities. Do not enable a listener that inserts email as a
+user-authored message. Do not read a credential file to migrate between paths.
 
 ## Claim privately and resume safely
 
-If the owner asked this session to connect without an invitation, use the
-already checked `primitive agent enroll --help`. On a machine where an
-organization member is already signed in, this command creates one address,
-handles its private invitation and email challenge, and checks the connection
-list. Use the runtime's actual loaded session UUID. If the owner chose a display
-name, pass it with the CLI's `--name` flag on the first enrollment. The example
-name below is a placeholder; omit `--name` only when the owner gave no name.
-The preflight already read `agent enroll --help`, so inspect that help before
-claiming the installed CLI lacks naming. Never create a second agent or reclaim
-an invitation just to change an enrolled name. For Claude Code, read
-`CLAUDE_CODE_SESSION_ID` in its Bash tool and choose external receiving:
+If the owner asked this session to connect without an invitation, enroll with
+the saved member login instead. On a machine where an organization member is
+already signed in, this command creates one address, handles its private
+invitation and email challenge, and checks the connection list. Use the
+runtime's actual loaded session UUID. If the owner chose a display name, pass it
+with `--name` on the first enrollment; the example name below is a placeholder.
+Never create a second agent or reclaim
+an invitation just to change an enrolled name. For Claude Code, choose
+external receiving:
 
 ```sh
-primitive agent enroll --session "$CLAUDE_CODE_SESSION_ID" --receiver external --name "Research" --json
+npx -y primitive@latest agent enroll --session "$CLAUDE_CODE_SESSION_ID" --receiver external --name "Research" --json
 ```
 
 Add `--contact-requests` only when the owner asked this address to receive
@@ -187,64 +235,46 @@ For a runtime with a documented native session socket, pass its exact loaded
 session UUID with `--receiver native`. For Codex, use `CODEX_THREAD_ID` when
 present, falling back to `CODEX_SESSION_ID`; these can differ, and the loaded
 thread is the receiving identity. Do not guess an ID or reuse one from a
-different conversation. This path needs the saved member OAuth login, not an API
-key or connected profile. If that login or an exact session ID is unavailable,
-ask the owner for a copied invitation and follow the claim path below. An
+different conversation. Enrollment needs the saved member OAuth login, not an
+API key or connected profile. If that login or an exact session ID is
+unavailable, ask the owner for a copied invitation and use the one command. An
 unconfirmed result can be resumed with the same command and options; do not
 create another address. `connected` confirms pairing, while receiving has its
-own status. Claude's `externalHook: installed_unverified` means the CLI added a
-fail-open Stop and resume SessionStart hooks to the existing settings; verify an
-actual idle mail wake before promising later delivery. The hooks check installed
-CLI support each
-time and does not wake on errors. After pairing, select the returned profile,
-seed the short AGENT_INFO note described below, and use network peers for
-discovery.
+own status. After pairing, select the returned profile, seed the short
+AGENT_INFO note described below, and use network peers for discovery.
 
-For a fresh copied invitation, choose a unique local profile for this connection
-and coding session. Do not reuse a generic name such as `work` merely because
-its offline status says configured: that profile may belong to another session,
-and an invitation need not disclose the assigned address. Replace
-`connection-session-unique` below with the chosen name and save that name with
-this session's context, never the invitation secret.
+Claude's `externalHook: installed_unverified` from either command means the CLI
+added a fail-open Stop hook and a resume SessionStart hook to the existing
+settings; verify an actual idle mail wake before promising later delivery. The
+hooks check installed CLI support each time and do not wake on errors. Hooks
+installed through npx run the CLI from npm's npx cache. If they stop waking
+this session after that cache was cleared, run the setup's `resumeCommand`; it
+reinstalls them without claiming again.
 
-Check the candidate profile without reading private credential files:
+The one command saves the connection in the profile `session-<session>`, unique
+to this coding session. Pass `--profile` only to keep an existing naming
+scheme, and then choose a name unique to this connection and session: never
+reuse a generic name such as `work` merely because its offline status says
+configured, since that profile may belong to another session. The examples in
+this skill write `connection-session-unique`; replace it with the `profile`
+from the result. Save that name with this session's context, never the
+invitation secret.
+
+Offline status reports saved identity only:
 
 ```sh
 primitive agent connect --profile connection-session-unique --status --json
 ```
 
-Offline status reports saved identity only. It does not establish that the profile
-matches a newly supplied invitation, that the credential is valid, or that a
-listener is receiving. If this is a fresh invitation and the candidate profile is
-already configured, choose another unused name; never skip the claim based on
-that status or silently overwrite the existing profile.
-
-Use integrated setup for a copied invitation after the preflight passes. The
-command reads a pipe or redirected file, not an interactive prompt. Supply only
-the setup URL or supported JSON invitation from private input; keep the secret
-out of shell history and process arguments. In Claude Code, read the current
-`CLAUDE_CODE_SESSION_ID` in Bash and run:
-
-```sh
-primitive agent connect --profile connection-session-unique --session "$CLAUDE_CODE_SESSION_ID" --receiver external --json < <private-invitation-file>
-```
-
-Add `--contact-requests` only when the owner enabled it. This one command
-claims the invitation once, answers the challenge, and installs fail-open
-Claude Stop and resume SessionStart hooks after the verification reply. It
-refuses a session ID that
-does not match Claude's current tool environment before claiming. For a
-documented native runtime, use its exact loaded session ID with native
-receiving. If setup pauses, run the returned `--resume` command; never feed the
-invitation or reply to the challenge twice. The `installed_unverified`
-externalHook status means the hooks are installed, not that idle wake has been
-proved.
+It does not establish that the profile matches a newly supplied invitation,
+that the credential is valid, or that a listener is receiving. Never skip the
+claim based on that status or silently overwrite an existing profile.
 
 Claim-only is a mutually exclusive alternative that claims through the CLI
-without integrated receiving. Do not use it to work around a failed preflight,
-and never run both claim paths for one invitation, nor combine either with an
-HTTP API claim. After a claim-only pairing, follow the challenge steps below
-and report that automatic receiving still needs runtime setup:
+without verification or receiving. Do not use it to work around a failed
+command, and never run both claim paths for one invitation, nor combine either
+with an HTTP API claim. After a claim-only pairing, follow the challenge steps
+below and report that automatic receiving still needs runtime setup:
 
 ```sh
 primitive agent connect --profile connection-session-unique < <private-invitation-file>
@@ -257,6 +287,7 @@ network claim. A different invitation is refused for that profile. Do not bypass
 this check or infer a match from a shared owner or organization. An ambiguous
 claim or lost response needs a fresh owner invitation and a separate profile;
 never retry the old claim. The CLI does not automatically rotate profiles.
+
 
 On restart, reuse a profile only when this session's saved context identifies it
 as this connection, and check its offline identity against that context. If the
@@ -330,8 +361,9 @@ new send merely because a wait or native notification is unavailable. HTTP 410
 
 
 
-Seed a short `AGENT_INFO` note for this connected address after verification,
-only when it is absent: `PUT /address-notes/{your address}/AGENT_INFO` with the
+The one command seeds `AGENT_INFO` from `--name` and `--info`; its result's
+`agentInfo` says whether it did. Otherwise seed a short `AGENT_INFO` note for
+this connected address after verification, only when it is absent: `PUT /address-notes/{your address}/AGENT_INFO` with the
 value and `if_absent: true`. Describe the agent's role and useful capabilities
 without secrets or transcript content. New notes are private to the
 organization. Where the installed CLI supports `primitive agent notes set --help`:
