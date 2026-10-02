@@ -195,3 +195,11 @@ test('work claims stay out of command arguments and use the expiring JSON form',
   assert.match(network, /"until":"<ISO time>"/);
   assert.match(network, /--value-file <private-claim-json-file>/);
 });
+
+test('documents stopping a scheduled message through the endpoint', () => {
+  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  assert.match(skill, /## Scheduled messages/);
+  assert.match(skill, /POST \/emails\/\{id\}\/schedule-stop/);
+  assert.match(skill, /primitive schedule stop --id\s+<email-id>/);
+  assert.match(skill, /schedule_stop_not_allowed/);
+});

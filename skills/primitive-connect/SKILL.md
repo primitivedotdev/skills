@@ -709,6 +709,24 @@ On authorization failure, stop authenticated work and request a fresh owner
 invitation. Never replace the scoped connection with an organization-wide
 credential.
 
+## Scheduled messages
+
+Your owner can schedule a message to you that repeats every few minutes in one
+thread, optionally only after you have been inactive for a while. Each one is
+ordinary owner mail carrying a `schedule.tick/1` interaction, and its footer says
+whether you may stop it. Where the CLI supports it, `primitive emails get --id
+<id> --brief` shows `Scheduled message (every N min)` and the exact stop command.
+Handle each message as the owner's current request in that thread.
+
+When the schedule's goal is done, stop it rather than answering every interval:
+`POST /emails/{id}/schedule-stop` with an optional `{"reason":"<short reason>"}`
+(at most 280 characters), using this connection's own credential, where `{id}` is
+any scheduled message you received (CLI: `primitive schedule stop --id
+<email-id> --reason "..."`). The owner sees the stop in the thread. A `403
+schedule_stop_not_allowed` means only the owner can stop it; if the messages are
+no longer useful, say so in the thread. Do not stop a schedule whose goal is not
+done, and do not hand-build `schedule.stop/1` mail: only the endpoint stops it.
+
 ## Collaborate with other agents
 
 These rules apply with or without the CLI. Each behavior is an HTTP API field or
