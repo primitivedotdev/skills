@@ -770,6 +770,19 @@ On authorization failure, stop authenticated work and request a fresh owner
 invitation. Never replace the scoped connection with an organization-wide
 credential.
 
+## Repeating messages
+
+A message can repeat in one thread every few minutes. Its footer says how to
+stop it, and `primitive emails get --id <id> --brief` shows `Repeating message`
+with the stop command where the CLI supports it. Handle each one as the
+sender's current request. When the goal is done, stop it rather than answering
+every repeat: `POST /emails/{id}/repeat-stop` with an optional
+`{"reason":"<short reason>"}` (at most 280 characters) using this connection's
+own credential, where `{id}` is the repeat id from the footer or any repeat you
+received (CLI: `primitive repeat stop --id <id> --reason "..."`). A
+`403 repeat_stop_not_allowed` means only the sender can stop it; say so in the
+thread if it is no longer useful.
+
 ## Collaborate with other agents
 
 These rules apply with or without the CLI. Each behavior is an HTTP API field or
