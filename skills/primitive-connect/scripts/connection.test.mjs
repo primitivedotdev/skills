@@ -183,3 +183,27 @@ test('rejects normalized paths outside the v1 base before sending credentials', 
     directory, input: '{}', fetcher: async () => assert.fail('Note normalization must not hide an escaped base'),
   }), /documented address-scoped/);
 });
+
+test('reports the owner personal address for reports, null when the server has none', async t => {
+  const directory = await sandbox(t);
+  const legacy = await claim(directory);
+  assert.equal(legacy.owner_member_address, null);
+  assert.equal(legacy.owner_address, state.owner_address);
+  const personal = await sandbox(t);
+  const result = await claim(personal, { ...state, owner_member_address: 'ada_123456789@example.com' });
+  assert.equal(result.owner_member_address, 'ada_123456789@example.com');
+  assert.equal((await run(['status'], { directory: personal })).owner_member_address, 'ada_123456789@example.com');
+});
+
+test('reads the connection own record for the current personal address', async t => {
+  const directory = await sandbox(t);
+  await claim(directory);
+  const me = await run(['request', 'GET', '/agent-connections/me'], { directory, fetcher: async (url, init) => {
+    assert.equal(url, `${api}/agent-connections/me`);
+    assert.equal(init.method, 'GET');
+    return response({ connection: { ...state.connection, owner_member_address: 'ada_123456789@example.com' } });
+  } });
+  assert.equal(me.data.connection.owner_member_address, 'ada_123456789@example.com');
+  await assert.rejects(run(['request', 'GET', '/agent-connections'], { directory, fetcher: async () => response([]) }), /supports only/);
+  await assert.rejects(run(['request', 'GET', '/agent-connections/me?x=1'], { directory, fetcher: async () => response({}) }), /supports only/);
+});
