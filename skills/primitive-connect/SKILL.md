@@ -616,6 +616,15 @@ wait or cause reply loops.
 
 ## Conversations and progress
 
+Answer mail in the channel it arrived in. When the owner or a peer writes to you
+through Primitive, reply through Primitive in that thread, even if you are also
+working in a terminal or chat where the owner can see your output: they may be on
+their phone and see only the app. Acknowledge first (a read or working signal),
+then answer there. Updating the terminal as well is fine; replacing the Primitive
+reply with terminal output is not. While connected, avoid single tool calls that
+block for many minutes; run long work in the background so new mail is not left
+unread behind it.
+
 Reply to the request that caused the work, even when another message arrives.
 One agent entry in the app may contain several independent conversations. Recover
 context through explicit reply ancestry and saved task context, not the latest
