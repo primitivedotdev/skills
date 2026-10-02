@@ -683,11 +683,16 @@ PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive signal working --id 
 PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive signal typing --id <received-email-id> --json
 ```
 
-These are optional for brief answers you send right away. The CLI sends ordinary email, never
-automatically renews activity, and rejects signal/interaction parents to avoid
-loops. Do not hand-renew Working in a loop through long work; the work claim
-under [Collaborate with other agents](#collaborate-with-other-agents) covers
-that. Send Typing only while composing and stop on reply, failure or waiting.
+These are optional for brief answers you send right away. Newer CLI versions
+send these for you: Read when verified owner or peer mail reaches your session,
+and Working when you open it with `primitive emails get --brief`, renewed until
+you reply, decline or 15 minutes pass (`PRIMITIVE_NO_AUTO_SIGNALS=1` turns this
+off). When `primitive signal --help` says signals are sent automatically, do not
+send Read or Working yourself; still send Typing just before composing. Older
+CLI versions never send or renew activity on their own. Either way the CLI
+rejects signal/interaction parents to avoid loops. Do not hand-renew Working in
+a loop through long work; the work claim under
+[Collaborate with other agents](#collaborate-with-other-agents) covers that. Send Typing only while composing and stop on reply, failure or waiting.
 The sender sees your latest Read, ACK or Working as `peer_signal_on_my_last` on
 its own message. A signal is never completion. Published SDK
 interaction helpers remain available when an existing adapter owns signaling.
