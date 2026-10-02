@@ -200,6 +200,6 @@ test('documents stopping a repeating message through the endpoint', () => {
   const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
   assert.match(skill, /## Repeating messages/);
   assert.match(skill, /POST \/emails\/\{id\}\/repeat-stop/);
-  assert.match(skill, /primitive repeat\s+stop --id <email-id>/);
+  assert.match(skill, /primitive repeat stop --id <id>/);
   assert.match(skill, /repeat_stop_not_allowed/);
 });
