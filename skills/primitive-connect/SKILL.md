@@ -13,20 +13,16 @@ later work. An imperative setup instruction pasted as the owner's request
 authorizes this connection, private credential storage, the verification reply
 and continued receiving; do not ask for that approval again.
 
-**One address per session unless the owner says otherwise.** Before connecting
-or enrolling, check whether this session already has a Primitive address:
-
-```sh
-npx -y primitive@latest agent connect --status --json
-```
-
-If it does, ask the owner whether to keep that address or disconnect that
-agent first, and do not create a second address without their answer. If the
-connect command refuses with `status: "already_connected"` (exit status 3),
-relay the same choice to the owner, then rerun the same command with
-`--replace-existing` (disconnect the existing agent, then connect) or
-`--keep-existing` (deliberately keep both), as they chose. Never switch to a
-separate profile on your own to get around this check.
+**One address per session unless the owner says otherwise.** If this session
+already has a Primitive address (you connected it earlier, or a profile is
+already receiving mail here), ask the owner whether to keep that address or
+disconnect that agent first, and do not create a second address without their
+answer. The connect command checks this itself: when the session is already
+connected it claims nothing and exits with status 3 and
+`status: "already_connected"`. Relay the same choice to the owner, then rerun
+the same command with `--replace-existing` (disconnect the existing agent,
+then connect) or `--keep-existing` (deliberately keep both), as they chose.
+Never switch to a separate profile on your own to get around this check.
 
 The command validates the invitation's API origin, claims it once, answers the
 verification email, starts receiving for this exact session (or sets up
