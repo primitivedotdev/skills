@@ -19,9 +19,9 @@ already receiving mail here), ask the owner whether to keep that address or
 disconnect that agent first, and do not create a second address without their
 answer. The connect command checks this itself: when the session is already
 connected it claims nothing and exits with status 3 and
-`status: "already_connected"`, naming the addresses already connected here.
-Tell the owner every one of them, relay the same choice, then rerun the same
-command as they chose:
+`status: "already_connected"` and names an address already connected here
+(there can be more than one). Tell the owner, relay the same choice, then rerun
+the same command as they chose:
 
 - `--replace-existing` disconnects every address connected to this session,
   not just one, then connects. Say so before they choose.
