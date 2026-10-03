@@ -19,12 +19,16 @@ if (args === 'agent connect --help') {
   console.log('--session --receiver ' + (process.env.MOCK_MODE === 'old-connect-hook'
     ? 'external leaves runtime-specific receiving to an external hook'
     : "external installs the exact Claude session's fail-open Stop hook after the verification reply")
-    + (process.env.MOCK_MODE === 'old-connect-resume' ? '' : ' and resume SessionStart hook'));
+    + (process.env.MOCK_MODE === 'old-connect-resume' ? '' : ' and resume SessionStart hook')
+    + (process.env.MOCK_MODE === 'no-poll' ? '' : '; poll installs nothing'));
+} else if (args === 'agent check-mail --help' && process.env.MOCK_MODE !== 'no-poll') {
+  console.log('Print the mail that reached the selected connected agent profile since its previous check');
 } else if (args === 'agent enroll --help') {
   console.log('--session --receiver ' + (process.env.MOCK_MODE === 'missing-enroll-name' ? '' : '--name ') + (process.env.MOCK_MODE === 'old-enroll-hook'
     ? 'external runtime event hook'
     : "With --receiver external in the exact Claude session, install a fail-open Stop hook in that runtime's settings")
-    + (process.env.MOCK_MODE === 'old-enroll-resume' ? '' : ' and resume SessionStart hook'));
+    + (process.env.MOCK_MODE === 'old-enroll-resume' ? '' : ' and resume SessionStart hook')
+    + (process.env.MOCK_MODE === 'no-poll' ? '' : ', or poll'));
 } else if (args === 'listen --help') {
   console.log('--wake --hook-session --notify-session --background external mail events at tool-output authority, never synthetic user messages');
 } else if (args === 'network peers --help') {
@@ -208,4 +212,45 @@ test('documents stopping a repeating message through the endpoint', () => {
   assert.match(skill, /POST \/emails\/\{id\}\/repeat-stop/);
   assert.match(skill, /primitive repeat stop --id <id>/);
   assert.match(skill, /repeat_stop_not_allowed/);
+});
+
+test('poll receiving needs the check command, not a listener or hook', () => {
+  const { result, calls } = preflight('poll', 'modern');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /passed for poll receiving/);
+  assert.deepEqual(calls, ['agent connect --help', 'agent enroll --help', 'agent check-mail --help', 'network peers --help']);
+  const old = preflight('poll', 'no-poll');
+  assert.equal(old.result.status, 1);
+  assert.match(old.result.stderr, /agent check-mail --help is unavailable/);
+  assert.match(old.result.stderr, /Do not claim the invitation/);
+});
+
+test('a session that cannot be woken connects without a session ID instead of asking the owner', () => {
+  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  const first = skill.indexOf('\n## ');
+  const section = skill.slice(first + 1, skill.indexOf('\n## ', first + 1));
+  assert.ok(section.includes("npx -y primitive@latest agent connect --json <<'INVITATION'"));
+  assert.match(section, /Use this form, without asking the owner/);
+  assert.match(section, /session variable above is\s+empty or unset/s);
+  assert.match(section, /cloud-hosted session whose tools run in a separate sandbox/);
+  assert.match(section, /empty session variable is treated the same way/);
+  assert.match(section, /complete connection, not a fallback that needs the owner's\s+choice/s);
+  assert.match(section, /Never guess, borrow or invent a session ID/);
+  assert.match(section, /`receiving\.mode: "poll"`, add one line/);
+  assert.doesNotMatch(skill, /explicitly limited pairing|limited setup/i);
+
+  const check = skill.slice(skill.indexOf('### Checking for mail'), skill.indexOf('After setup, report pairing'));
+  assert.match(check, /`receiving\.checkCommand`/);
+  assert.match(check, /start of every turn and again after\s+you send or reply/s);
+  assert.match(check, /primitive emails get --id <id> --brief/);
+  assert.match(check, /deduplicate by email ID/);
+  assert.match(check, /Do not hold a turn\s+open with sleep loops/s);
+  assert.match(check, /do not ask the owner to switch\s+runtimes/s);
+});
+
+test('status updates stay in one home thread with the owner', () => {
+  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  assert.match(skill, /Keep one home thread with the owner for status updates, plans and decision\s+requests/s);
+  assert.match(skill, /answer that question there, but post later status and unrelated updates\s+back in the home thread/s);
+  assert.match(skill, /Never start a new thread for an update when an\s+appropriate thread already exists/s);
 });
