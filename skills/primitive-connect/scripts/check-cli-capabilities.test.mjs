@@ -254,3 +254,35 @@ test('status updates stay in one home thread with the owner', () => {
   assert.match(skill, /answer that question there, but post later status and unrelated updates\s+back in the home thread/s);
   assert.match(skill, /Never start a new thread for an update when an\s+appropriate thread already exists/s);
 });
+
+test('the description triggers for everyday mail work, not only setup', () => {
+  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  const description = /^description: (.*)$/m.exec(skill)?.[1] ?? '';
+  assert.match(description, /^Load before any primitive command/);
+  assert.match(description, /already connected/);
+});
+
+test('already_connected offers keep-without-connecting apart from --keep-existing', () => {
+  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  assert.match(skill, /Keep the existing address and do not connect the new one: run nothing\s+more/);
+  assert.match(skill, /Have both: rerun with `--keep-existing`/);
+  assert.match(skill, /run `--resume` as it says without asking/);
+});
+
+test('every documented self-status check passes --profile', () => {
+  for (const file of ['../SKILL.md', '../references/native-session.md']) {
+    const text = readFileSync(new URL(file, import.meta.url), 'utf8');
+    assert.doesNotMatch(text, /agent connect --status/, file);
+  }
+});
+
+test('the everyday mail loop documents automatic signals and how to suppress them', () => {
+  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  const loop = skill.slice(skill.indexOf('## When mail arrives'), skill.indexOf('## About this connection'));
+  assert.ok(loop.length > 0);
+  assert.match(loop, /emails get --id <id> --brief/);
+  assert.match(loop, /--no-signal/);
+  assert.match(loop, /--fyi/);
+  assert.match(loop, /profile of the address the mail was sent to/);
+  assert.doesNotMatch(loop, /agent working set "/);
+});
