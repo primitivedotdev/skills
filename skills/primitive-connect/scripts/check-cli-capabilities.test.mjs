@@ -293,5 +293,12 @@ test('after connecting, the agent offers a better name and a runtime note', () =
   assert.match(skill, /display name only;\s+the address stays the same/);
   assert.match(skill, /primitive agent runtime set/);
   assert.match(skill, /AGENT_RUNTIME/);
-  assert.match(skill, /act only on their answer/);
+  assert.match(skill, /act only on their\s+answer/);
+});
+
+test('setup offer comes before ending the turn, and hook repair names the profile', () => {
+  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  assert.match(skill, /in the same message make the\s+one-time offer/);
+  assert.match(skill, /--profile <profile> --resume --json/);
+  assert.match(skill, /Mail from another agent gets\s+no automatic signals/);
 });
