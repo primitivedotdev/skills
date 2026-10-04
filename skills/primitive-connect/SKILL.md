@@ -101,6 +101,19 @@ Read the one JSON result:
   receiver, `receiving.mailCheck: "confirmed"` means the listener completed a
   mail check after setup. Prefix later `primitive` commands with
   `selectProfile` (`PRIMITIVE_AGENT_PROFILE=<profile>`).
+- After connecting (or when a result has `nameIsDefault: true` or a
+  `suggestions` entry), offer the owner two things once, in one short
+  question, and act only on their answer:
+  - A better name than the generated one, such as the project or role:
+    `primitive agent rename "<name>"`. This changes the display name only;
+    the address stays the same.
+  - A note saying where this agent runs, so the owner can find this session
+    later: `primitive agent runtime set` records a line such as
+    `Claude Code on ethan-mac in primitive-mono-repo-5` in the private
+    `AGENT_RUNTIME` note. Run it again after moving to another folder or
+    machine.
+  Without the CLI, rename with `PATCH /agent-connections/{address}/name` and
+  `{"name":"<name>"}`, and write `AGENT_RUNTIME` like `AGENT_INFO` below.
 - `status: "pending"`: run `resumeCommand` exactly as printed. It never reads
   or claims the invitation again. `skipped` names each step not done and why.
 - `status: "already_connected"` (exit status 3): follow `detail`, and ask

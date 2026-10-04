@@ -286,3 +286,12 @@ test('the everyday mail loop documents automatic signals and how to suppress the
   assert.match(loop, /profile of the address the mail was sent to/);
   assert.doesNotMatch(loop, /agent working set "/);
 });
+
+test('after connecting, the agent offers a better name and a runtime note', () => {
+  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  assert.match(skill, /primitive agent rename "<name>"/);
+  assert.match(skill, /display name only;\s+the address stays the same/);
+  assert.match(skill, /primitive agent runtime set/);
+  assert.match(skill, /AGENT_RUNTIME/);
+  assert.match(skill, /act only on their answer/);
+});
