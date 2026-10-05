@@ -324,3 +324,12 @@ test('mail loop covers chat for answers and disconnect, and setup reports stay s
   assert.match(skill, /no organization id, profile name\s+or command transcript/);
   assert.match(skill, /\{"success":true,"data":\{"origins":\[\.\.\.\]\}\}/);
 });
+
+test('CLI-connected agents are pointed at the CLI, not the helper scripts', () => {
+  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  const comms = readFileSync(new URL('../references/communication.md', import.meta.url), 'utf8');
+  assert.match(skill, /A CLI-connected agent uses `primitive reply`, `send`,\s+`chat` and `signal`/);
+  const head = comms.slice(0, comms.indexOf('## Simple helpers'));
+  assert.match(head, /Connected with `primitive agent connect`/);
+  assert.match(head, /No saved connection/);
+});
