@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -46,9 +46,13 @@ if (args === 'agent connect --help') {
   }
 }
 
-const skillWithManualSetup = () =>
-  readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8') +
-  readFileSync(new URL('../references/manual-setup.md', import.meta.url), 'utf8');
+const skillRoot = new URL('../', import.meta.url);
+const referenceFiles = () =>
+  readdirSync(new URL('references/', skillRoot)).filter(name => name.endsWith('.md')).sort().map(name => `references/${name}`);
+
+// SKILL.md followed by every reference file: for rules that live in a reference.
+const skillWithReferences = () =>
+  ['SKILL.md', ...referenceFiles()].map(file => readFileSync(new URL(file, skillRoot), 'utf8')).join('\n');
 
 test('accepts the exact Claude hook and peer discovery before any claim', () => {
   const { result, calls } = preflight('external', 'modern');
@@ -81,7 +85,7 @@ test('requires display-name support before creating a self-enrolled address', ()
     assert.match(result.stderr, /agent enroll --help lacks required setup/);
     assert.deepEqual(calls, ['agent connect --help', 'agent enroll --help', 'listen --help', 'network peers --help']);
   }
-  const skill = skillWithManualSetup();
+  const skill = skillWithReferences();
   assert.match(skill, /agent enroll --session "\$CLAUDE_CODE_SESSION_ID" --receiver external --name "Research" --json/);
   assert.match(skill, /Never create a second agent or reclaim\s+an invitation just to change an enrolled name/s);
 });
@@ -108,7 +112,7 @@ test('the one command comes first and needs nothing else from the skill', () => 
 });
 
 test('claim-only stays a mutually exclusive fallback after the one command', () => {
-  const skill = skillWithManualSetup();
+  const skill = skillWithReferences();
   const integrated = skill.indexOf('npx -y primitive@latest agent connect --session');
   const fallback = skill.indexOf('primitive agent connect --profile connection-session-unique <');
   assert.ok(integrated > 0 && fallback > integrated);
@@ -118,7 +122,7 @@ test('claim-only stays a mutually exclusive fallback after the one command', () 
 });
 
 test('the HTTP API path serves agents without a terminal and keeps the invitation secret to one claim POST', () => {
-  const skill = skillWithManualSetup();
+  const skill = skillWithReferences();
   const main = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
   const manual = readFileSync(new URL('../references/manual-setup.md', import.meta.url), 'utf8');
   const one = main.indexOf('## Connect in one command');
@@ -151,7 +155,7 @@ test('the HTTP API path serves agents without a terminal and keeps the invitatio
 });
 
 test('receiving guidance distinguishes Claude hook evidence from native background health', () => {
-  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  const skill = skillWithReferences();
   const claude = skill.split("For Claude Code's external receiver,")[1]?.split('For a native session receiver')[0];
   assert.ok(claude, 'Claude guidance must precede native background guidance');
   assert.match(claude, /listener\.reason: absent.*does not mean an installed\s+external hook failed/s);
@@ -168,7 +172,7 @@ test('receiving guidance distinguishes Claude hook evidence from native backgrou
 });
 
 test('async reply guidance requires the useful answer rather than only an arrival notice', () => {
-  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  const skill = skillWithReferences();
   assert.match(skill, /exact reply to delegated work arrives, read its full content and verify\s+its sender and reply ancestry/s);
   assert.match(skill, /report the substantive result when requested or useful/);
   assert.match(skill, /reply grants no new\s+access to private history and does not require a reply to an ACK/s);
@@ -179,14 +183,14 @@ test('async reply guidance requires the useful answer rather than only an arriva
 });
 
 test('owner-conditioned disclosure requires exact sender and directory owner proof', () => {
-  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  const skill = skillWithReferences();
   assert.match(skill, /sender_connected_agent_verified` proves the authenticated sending address, not\s+which human owns it/s);
   assert.match(skill, /match the exact address and owner in its\s+result/s);
   assert.match(skill, /directory is unavailable or gives no exact owner proof,\s+defer that owner-conditioned request/s);
 });
 
 test('CLI-only agents get the installed ordinary-email activity commands', () => {
-  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  const skill = skillWithReferences();
   assert.match(skill, /inspect installed `primitive signal --help` when activity\s+is useful/s);
   assert.match(skill, /primitive signal working --id <received-email-id> --json/);
   assert.match(skill, /primitive signal typing --id <received-email-id> --json/);
@@ -207,7 +211,7 @@ test('HTTP contact requests prepare first and keep the contact policy rules', ()
 });
 
 test('work claims stay out of command arguments and use the expiring JSON form', () => {
-  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  const skill = skillWithReferences();
   assert.match(skill, /never pass it as a command argument/);
   assert.doesNotMatch(skill, /agent working set "/);
   assert.match(skill, /agent working set --stdin --private </);
@@ -219,8 +223,10 @@ test('work claims stay out of command arguments and use the expiring JSON form',
 });
 
 test('documents stopping a repeating message through the endpoint', () => {
-  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
-  assert.match(skill, /## Repeating messages/);
+  const main = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  assert.match(main, /## Repeating messages/);
+  assert.match(main, /primitive repeat stop --id <id>/);
+  const skill = skillWithReferences();
   assert.match(skill, /POST \/emails\/\{id\}\/repeat-stop/);
   assert.match(skill, /primitive repeat stop --id <id>/);
   assert.match(skill, /repeat_stop_not_allowed/);
@@ -251,7 +257,9 @@ test('a session that cannot be woken connects without a session ID instead of as
   assert.match(section, /`receiving\.mode: "poll"`, add one line/);
   assert.doesNotMatch(skill, /explicitly limited pairing|limited setup/i);
 
-  const check = skill.slice(skill.indexOf('### Checking for mail'), skill.indexOf('After setup, report pairing'));
+  const checkStart = skill.indexOf('### Checking for mail');
+  assert.ok(checkStart > 0);
+  const check = skill.slice(checkStart, skill.indexOf('\n## ', checkStart));
   assert.match(check, /`receiving\.checkCommand`/);
   assert.match(check, /start of every turn and again after\s+you send or reply/s);
   assert.match(check, /primitive emails get --id <id> --brief/);
@@ -261,7 +269,7 @@ test('a session that cannot be woken connects without a session ID instead of as
 });
 
 test('status updates stay in one home thread with the owner', () => {
-  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  const skill = skillWithReferences();
   assert.match(skill, /Keep one home thread with the owner for status updates, plans and decision\s+requests/s);
   assert.match(skill, /answer that question there, but post later status and unrelated updates\s+back in the home thread/s);
   assert.match(skill, /Never start a new thread for an update when an\s+appropriate thread already exists/s);
@@ -316,7 +324,7 @@ test('setup offer comes before ending the turn, and hook repair names the profil
 });
 
 test('mail loop covers chat for answers and disconnect, and setup reports stay short', () => {
-  const skill = skillWithManualSetup();
+  const skill = skillWithReferences();
   const loop = skill.slice(skill.indexOf('## When mail arrives'), skill.indexOf('## About this connection'));
   assert.match(loop, /primitive chat <address>/);
   assert.match(loop, /do not write your own polling loop/);
@@ -326,10 +334,57 @@ test('mail loop covers chat for answers and disconnect, and setup reports stay s
 });
 
 test('CLI-connected agents are pointed at the CLI, not the helper scripts', () => {
-  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  const skill = skillWithReferences();
   const comms = readFileSync(new URL('../references/communication.md', import.meta.url), 'utf8');
   assert.match(skill, /A CLI-connected agent uses `primitive reply`, `send`,\s+`chat` and `signal`/);
   const head = comms.slice(0, comms.indexOf('## Simple helpers'));
   assert.match(head, /Connected with `primitive agent connect`/);
   assert.match(head, /No saved connection/);
+});
+
+test('SKILL.md stays small enough to read in one pass', () => {
+  const bytes = readFileSync(new URL('SKILL.md', skillRoot)).length;
+  assert.ok(bytes < 25000, `SKILL.md is ${bytes} bytes; move detail into references/`);
+});
+
+const slug = heading => heading.trim().toLowerCase().replace(/[^\p{L}\p{N}\s_-]/gu, '').replace(/\s/g, '-');
+
+function anchors(text) {
+  const seen = new Map();
+  const result = new Set();
+  let fenced = false;
+  for (const line of text.split('\n')) {
+    if (/^(```|~~~)/.test(line)) fenced = !fenced;
+    const heading = !fenced && /^#{1,6}\s+(.*)$/.exec(line);
+    if (!heading) continue;
+    const base = slug(heading[1]);
+    const count = seen.get(base) ?? 0;
+    seen.set(base, count + 1);
+    result.add(count ? `${base}-${count}` : base);
+  }
+  return result;
+}
+
+test('every relative link and anchor between SKILL.md and its references resolves', () => {
+  const files = ['SKILL.md', ...referenceFiles()];
+  let checked = 0;
+  for (const file of files) {
+    const from = new URL(file, skillRoot);
+    const text = readFileSync(from, 'utf8').replace(/```[\s\S]*?```/g, '');
+    for (const [, target] of text.matchAll(/\]\(([^)\s]+)\)/g)) {
+      if (/^[a-z]+:/i.test(target)) continue;
+      const [path, anchor] = target.split('#');
+      const to = path ? new URL(path, from) : from;
+      assert.ok(existsSync(to), `${file}: ${target} points at a missing file`);
+      if (anchor !== undefined) {
+        assert.ok(anchors(readFileSync(to, 'utf8')).has(anchor), `${file}: ${target} points at a missing heading`);
+      }
+      checked += 1;
+    }
+  }
+  assert.ok(checked > 20, `only ${checked} links checked`);
+  const main = readFileSync(new URL('SKILL.md', skillRoot), 'utf8');
+  for (const reference of ['contacts', 'conversations', 'collaboration', 'presence-and-receiving', 'manual-setup']) {
+    assert.match(main, new RegExp(`\\]\\(references/${reference}\\.md`), `SKILL.md must link references/${reference}.md`);
+  }
 });
