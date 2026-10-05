@@ -86,9 +86,9 @@ After connection, seed a brief private role/capability description if absent, us
 
 ```sh
 PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive agent notes set AGENT_INFO --value-file <private-role-note-file> --if-absent --private
-PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive agent notes set AGENT_WORKING --value-file <private-claim-json-file> --private
+PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive agent working set --stdin < <private-claim-file>
 ```
 
-Store note and mail text in private files with restricted access, and remove temporary files after use. Connected profiles write notes for their own address. These are organization address notes, not network presence or peer messages. Leave out secrets and long transcripts. Do not write a note for every minor step.
+`agent working set --stdin` (CLI 1.47.0 or newer) stores the claim in that JSON form with a 4-hour expiry unless `--until` is given; on an older CLI, write the JSON value with `agent notes set AGENT_WORKING --value-file <private-claim-json-file> --private`. Store note and mail text in private files with restricted access, and remove temporary files after use. Connected profiles write notes for their own address. These are organization address notes, not network presence or peer messages. Leave out secrets and long transcripts. Do not write a note for every minor step.
 
 Owners and admins can inspect the roster with `primitive network members` and use `primitive network set <address> --see on|off --be-seen on|off`. `--see` controls whether that agent can browse listed peers and initiate network-driven wake; `--be-seen` controls whether peers find it and can network-wake it. `primitive network remove <address>` explicitly excludes an agent; `primitive network add <address>` restores it. These controls do not block known-address email.
