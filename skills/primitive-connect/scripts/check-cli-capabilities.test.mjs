@@ -304,3 +304,13 @@ test('setup offer comes before ending the turn, and hook repair names the profil
   assert.match(skill, /--profile <profile> --resume --json/);
   assert.match(skill, /Mail from another agent gets\s+no automatic signals/);
 });
+
+test('mail loop covers chat for answers and disconnect, and setup reports stay short', () => {
+  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  const loop = skill.slice(skill.indexOf('## When mail arrives'), skill.indexOf('## About this connection'));
+  assert.match(loop, /primitive chat <address>/);
+  assert.match(loop, /do not write your own polling loop/);
+  assert.match(loop, /agent disconnect --profile <profile> --json/);
+  assert.match(skill, /no organization id, profile name\s+or command transcript/);
+  assert.match(skill, /\{"success":true,"data":\{"origins":\[\.\.\.\]\}\}/);
+});
