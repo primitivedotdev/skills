@@ -46,6 +46,10 @@ if (args === 'agent connect --help') {
   }
 }
 
+const skillWithManualSetup = () =>
+  readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8') +
+  readFileSync(new URL('../references/manual-setup.md', import.meta.url), 'utf8');
+
 test('accepts the exact Claude hook and peer discovery before any claim', () => {
   const { result, calls } = preflight('external', 'modern');
   assert.equal(result.status, 0, result.stderr);
@@ -77,7 +81,7 @@ test('requires display-name support before creating a self-enrolled address', ()
     assert.match(result.stderr, /agent enroll --help lacks required setup/);
     assert.deepEqual(calls, ['agent connect --help', 'agent enroll --help', 'listen --help', 'network peers --help']);
   }
-  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  const skill = skillWithManualSetup();
   assert.match(skill, /agent enroll --session "\$CLAUDE_CODE_SESSION_ID" --receiver external --name "Research" --json/);
   assert.match(skill, /Never create a second agent or reclaim\s+an invitation just to change an enrolled name/s);
 });
@@ -104,7 +108,7 @@ test('the one command comes first and needs nothing else from the skill', () => 
 });
 
 test('claim-only stays a mutually exclusive fallback after the one command', () => {
-  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  const skill = skillWithManualSetup();
   const integrated = skill.indexOf('npx -y primitive@latest agent connect --session');
   const fallback = skill.indexOf('primitive agent connect --profile connection-session-unique <');
   assert.ok(integrated > 0 && fallback > integrated);
@@ -114,12 +118,18 @@ test('claim-only stays a mutually exclusive fallback after the one command', () 
 });
 
 test('the HTTP API path serves agents without a terminal and keeps the invitation secret to one claim POST', () => {
-  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
-  const one = skill.indexOf('## Connect in one command');
-  const api = skill.indexOf('## Connect with the HTTP API');
+  const skill = skillWithManualSetup();
+  const main = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  const manual = readFileSync(new URL('../references/manual-setup.md', import.meta.url), 'utf8');
+  const one = main.indexOf('## Connect in one command');
+  const stub = main.indexOf('## Connect with the HTTP API');
+  assert.ok(one > 0 && stub > one, 'one command, then the HTTP API pointer');
+  assert.match(main.slice(stub), /references\/manual-setup\.md#connect-with-the-http-api/);
+  const api = manual.indexOf('## Connect with the HTTP API');
+  const cliInManual = manual.indexOf('## Other CLI paths');
+  assert.ok(api >= 0 && cliInManual > api, 'HTTP API path, then other CLI paths, in the manual setup reference');
+  const section = manual.slice(api, cliInManual);
   const cli = skill.indexOf('## Other CLI paths');
-  assert.ok(one > 0 && api > one && cli > api, 'one command, then the HTTP API path, then other CLI paths');
-  const section = skill.slice(api, cli);
   assert.match(skill, /An agent without a\s+terminal uses the \[HTTP API path\]/s);
   assert.match(skill, /`#token=` fragment is a secret for one claim POST, never a query parameter,\s+GET URL, command argument, log entry, or shared note/s);
   assert.match(skill, /Never fetch an arbitrary invitation origin/);
@@ -306,7 +316,7 @@ test('setup offer comes before ending the turn, and hook repair names the profil
 });
 
 test('mail loop covers chat for answers and disconnect, and setup reports stay short', () => {
-  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  const skill = skillWithManualSetup();
   const loop = skill.slice(skill.indexOf('## When mail arrives'), skill.indexOf('## About this connection'));
   assert.match(loop, /primitive chat <address>/);
   assert.match(loop, /do not write your own polling loop/);
