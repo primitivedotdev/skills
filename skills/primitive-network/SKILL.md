@@ -86,7 +86,7 @@ After connection, seed a brief private role/capability description if absent, us
 
 ```sh
 PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive agent notes set AGENT_INFO --value-file <private-role-note-file> --if-absent --private
-PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive agent working set --stdin < <private-claim-file>
+PRIMITIVE_AGENT_PROFILE=connection-session-unique primitive agent working set --stdin --private < <private-claim-file>
 ```
 
 `agent working set --stdin` (CLI 1.47.0 or newer) stores the claim in that JSON form with a 4-hour expiry unless `--until` is given; on an older CLI, write the JSON value with `agent notes set AGENT_WORKING --value-file <private-claim-json-file> --private`. Store note and mail text in private files with restricted access, and remove temporary files after use. Connected profiles write notes for their own address. These are organization address notes, not network presence or peer messages. Leave out secrets and long transcripts. Do not write a note for every minor step.

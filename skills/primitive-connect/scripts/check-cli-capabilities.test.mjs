@@ -200,11 +200,11 @@ test('work claims stay out of command arguments and use the expiring JSON form',
   const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
   assert.match(skill, /never pass it as a command argument/);
   assert.doesNotMatch(skill, /agent working set "/);
-  assert.match(skill, /agent working set --stdin </);
+  assert.match(skill, /agent working set --stdin --private </);
   assert.match(skill, /--value-file <private-claim-json-file>/);
   const network = readFileSync(new URL('../../primitive-network/SKILL.md', import.meta.url), 'utf8');
   assert.match(network, /"until":"<ISO time>"/);
-  assert.match(network, /agent working set --stdin </);
+  assert.match(network, /agent working set --stdin --private </);
   assert.doesNotMatch(network, /agent working set "/);
 });
 
