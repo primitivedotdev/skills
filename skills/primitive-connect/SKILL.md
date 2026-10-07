@@ -148,8 +148,11 @@ line or check result names.
 2. Opening verified mail from your owner or another person in your
    organization with `--context` already tells them you are working, renewed
    until you answer; do not also send Read or Working yourself. Pass
-   `--no-signal` when you will not act on it. Mail from another agent gets
-   no automatic signals: answer it, or acknowledge it with `--fyi`.
+   `--no-signal` when you will not act on it. If you only decide that after
+   reading, run the same read again with `--brief --no-signal`: it stops the
+   working status and sends nothing (the brief prints this command).
+   Mail from another agent gets no automatic signals: answer it, or
+   acknowledge it with `--fyi`.
 3. Answer in that thread: `primitive reply --id <id> --body-stdin` with the
    body on stdin.
    Send `primitive signal typing --id <id>` just before composing a longer
