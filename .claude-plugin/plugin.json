@@ -1,0 +1,32 @@
+{
+  "name": "primitive",
+  "version": "1.0.0",
+  "description": "Email infrastructure for AI agents. Skills to send, receive, and reply to email, run code on inbound mail, set up custom domains and webhooks, plus Primitive's hosted MCP server.",
+  "author": {
+    "name": "Primitive",
+    "url": "https://primitive.dev"
+  },
+  "homepage": "https://primitive.dev",
+  "repository": "https://github.com/primitivedotdev/skills",
+  "license": "MIT",
+  "keywords": [
+    "email",
+    "agent-email",
+    "inbound-email",
+    "transactional-email",
+    "webhooks",
+    "mcp",
+    "agent-skills"
+  ],
+  "skills": "./skills/",
+  "mcpServers": {
+    "primitive": {
+      "type": "http",
+      "url": "https://www.primitive.dev/mcp"
+    },
+    "primitive-docs": {
+      "type": "http",
+      "url": "https://www.primitive.dev/mcp/docs"
+    }
+  }
+}

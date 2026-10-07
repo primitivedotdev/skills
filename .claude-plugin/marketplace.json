@@ -1,0 +1,17 @@
+{
+  "name": "primitive",
+  "owner": {
+    "name": "Primitive",
+    "url": "https://primitive.dev"
+  },
+  "metadata": {
+    "description": "Primitive plugins for Claude Code"
+  },
+  "plugins": [
+    {
+      "name": "primitive",
+      "source": "./",
+      "description": "Email infrastructure for AI agents. Skills to send, receive, and reply to email, run code on inbound mail, set up custom domains and webhooks, plus Primitive's hosted MCP server."
+    }
+  ]
+}

@@ -21,9 +21,20 @@ npx skills add primitivedotdev/skills --skill primitive-webhooks
 npx skills add primitivedotdev/skills --skill primitive-domains
 ```
 
+### As a Claude Code plugin
+
+In Claude Code, install the skills and Primitive's hosted MCP servers together as one plugin:
+
+```bash
+claude plugin marketplace add primitivedotdev/skills
+claude plugin install primitive@primitive
+```
+
+Or, from inside a session, `/plugin marketplace add primitivedotdev/skills` then `/plugin install primitive@primitive`. Run `/mcp` and pick `primitive` to sign in with your Primitive account over OAuth; the docs server needs no sign-in. The plugin carries the same skills as `npx skills add`, namespaced as `primitive:<skill>`, so install one or the other, not both.
+
 ### As an Agent Plugin
 
-This repository is also an [Agent Plugin](https://agent-plugins.org/specification). `plugin.json` at the root is the manifest, the skills live under `skills/`, and `mcp.json` bundles Primitive's hosted MCP servers (`https://www.primitive.dev/mcp` for mail, authenticated with OAuth or a Primitive API key by your client, and `https://www.primitive.dev/mcp/docs` for public docs search, no auth). Point any Agent Plugins client at this repository to install everything at once.
+This repository is also an [Agent Plugin](https://agent-plugins.org/specification). `plugin.json` at the root is the manifest, the skills live under `skills/`, and `mcp.json` bundles Primitive's hosted MCP servers (`https://www.primitive.dev/mcp` for mail, authenticated with OAuth or a Primitive API key by your client, and `https://www.primitive.dev/mcp/docs` for public docs search, no auth). Point any Agent Plugins client at this repository to install everything at once. The Claude Code manifest lives in `.claude-plugin/` and declares the same servers.
 
 ## Skills
 
