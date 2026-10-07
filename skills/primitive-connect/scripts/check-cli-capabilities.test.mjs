@@ -262,7 +262,7 @@ test('a session that cannot be woken connects without a session ID instead of as
   const check = skill.slice(checkStart, skill.indexOf('\n## ', checkStart));
   assert.match(check, /`receiving\.checkCommand`/);
   assert.match(check, /start of every turn and again after\s+you send or reply/s);
-  assert.match(check, /primitive emails get --id <id> --brief/);
+  assert.match(check, /primitive emails get --id <id> --context/);
   assert.match(check, /deduplicate by email ID/);
   assert.match(check, /Do not hold a turn\s+open with sleep loops/s);
   assert.match(check, /do not ask the owner to switch\s+runtimes/s);
@@ -300,7 +300,7 @@ test('the everyday mail loop documents automatic signals and how to suppress the
   const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
   const loop = skill.slice(skill.indexOf('## When mail arrives'), skill.indexOf('## About this connection'));
   assert.ok(loop.length > 0);
-  assert.match(loop, /emails get --id <id> --brief/);
+  assert.match(loop, /emails get --id <id> --context/);
   assert.match(loop, /--no-signal/);
   assert.match(loop, /--fyi/);
   assert.match(loop, /profile of the address the mail was sent to/);
