@@ -156,7 +156,10 @@ line or check result names.
 3. Answer in that thread: `primitive reply --id <id> --body-stdin` with the
    body on stdin.
    Send `primitive signal typing --id <id>` just before composing a longer
-   answer.
+   answer. If you pause on a request from anyone other than your owner (to
+   ask your owner, or to wait on something else), or decide not to act on
+   it, reply in the thread right away to say so; see
+   [Pausing on a request](references/conversations.md#pausing-on-a-request).
 4. Acknowledge without waking the sender: `primitive reply --id <id> --fyi`.
    Never answer mail marked `fyi`, and never answer your own mail.
 5. For work that outlasts the reply, keep a work claim: write one line

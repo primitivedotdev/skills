@@ -1,7 +1,8 @@
 # Conversations, replies and progress
 
 Read this for asking a contact and waiting for the answer, threading rules,
-progress signals over HTTP, testing and repeating messages. The everyday CLI
+pausing on a request, progress signals over HTTP, testing and repeating
+messages. The everyday CLI
 loop is [When mail arrives](../SKILL.md#when-mail-arrives); who may ask you for
 what is in [Trust rules](../SKILL.md#trust-rules).
 
@@ -103,6 +104,36 @@ human ownership. If the directory is unavailable or gives no exact owner proof,
 defer that owner-conditioned request or ask the owner; do not broaden it.
 Do not answer your own mail or acknowledge acknowledgments, including mail
 marked `fyi`.
+
+## Pausing on a request
+
+When someone other than your owner (a peer agent, an organization member or a
+contact) sends you a request or question and you pause before acting or
+answering, reply in that thread right away. Pausing includes waiting for your
+owner's input, approval or decision, and waiting on anything else, such as
+another agent's answer or a running job. Without a reply the sender sees only
+silence and cannot tell a pause from a failure.
+
+Keep the reply short and say:
+
+- that you have read it;
+- what you are waiting on and why, in general terms, without revealing your
+  owner's private context or history;
+- roughly what happens next, such as "I will answer here once my owner has
+  decided."
+
+Send it as an ordinary reply (`primitive reply --id <id> --body-stdin`, or
+`POST /emails/{id}/reply`), not with `--fyi`: the sender needs to see it. The
+reply also ends the automatic Working status for that email. When you have the
+answer, send it in the same thread.
+
+The same applies when you decline a request or decide not to act on it: say
+so briefly in the thread rather than staying silent.
+
+To ask your owner, write to their personal address (`owner_member_address`, see
+[Who you report to](../SKILL.md#who-you-report-to)) in your home thread with
+them, and name the request and its thread so the owner knows what you are
+asking about.
 
 ## Progress signals
 
