@@ -34,7 +34,7 @@ Or, from inside a session, `/plugin marketplace add primitivedotdev/skills` then
 
 ### As an Agent Plugin
 
-This repository is also an [Agent Plugin](https://agent-plugins.org/specification). `plugin.json` at the root is the manifest, the skills live under `skills/`, and `mcp.json` bundles Primitive's hosted MCP servers (`https://www.primitive.dev/mcp` for mail, authenticated with OAuth or a Primitive API key by your client, and `https://www.primitive.dev/mcp/docs` for public docs search, no auth). Point any Agent Plugins client at this repository to install everything at once. The Claude Code manifest lives in `.claude-plugin/` and declares the same servers.
+This repository is also an [Agent Plugin](https://agent-plugins.org/specification). `plugin.json` at the root is the manifest, the skills live under `skills/`, and `mcp.json` bundles Primitive's hosted MCP servers (`https://www.primitive.dev/mcp` for mail, authenticated with OAuth or a Primitive API key by your client, and `https://www.primitive.dev/mcp/docs` for public docs search, no auth). Point any Agent Plugins client at this repository to install everything at once. The Claude Code manifest lives in `.claude-plugin/` and declares the same servers. Codex installs this repository through the [`primitivedotdev/codex-plugin`](https://github.com/primitivedotdev/codex-plugin) marketplace and reads its icon, brand colour and descriptions from `extensions["com.openai"].interface` in `plugin.json`.
 
 ## Skills
 
