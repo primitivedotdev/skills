@@ -18,3 +18,12 @@ jobs:
           node-version: '22'
       - run: npm ci --prefix skills/primitive-connect --ignore-scripts
       - run: npm test --prefix skills/primitive-connect
+
+  plugin-manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/check-plugin-manifests.mjs
