@@ -47,6 +47,16 @@ if (!codexInterface) {
   }
 }
 
+// Codex installs this repository as its own marketplace. The entry must keep
+// pointing at the repository root, or Codex stops finding the plugin.
+const codexMarketplace = read('.agents/plugins/marketplace.json')
+const codexEntry = (codexMarketplace.plugins ?? []).find((plugin) => plugin.name === agentPlugin.name)
+if (!codexEntry) {
+  problems.push(`.agents/plugins/marketplace.json does not list the "${agentPlugin.name}" plugin`)
+} else if (codexEntry.source?.source !== 'local' || codexEntry.source?.path !== './') {
+  problems.push('.agents/plugins/marketplace.json must source the plugin from "./"')
+}
+
 const listed = (claudeMarketplace.plugins ?? []).find((plugin) => plugin.name === claudePlugin.name)
 if (!listed) {
   problems.push(`.claude-plugin/marketplace.json does not list the "${claudePlugin.name}" plugin`)
