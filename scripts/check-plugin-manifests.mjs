@@ -2,7 +2,7 @@
 // (plugin.json + mcp.json) and the Claude Code one under .claude-plugin/. They
 // describe the same plugin, so fail when they disagree instead of letting one
 // host install a stale version or a different set of MCP servers.
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 
 const read = (path) => JSON.parse(readFileSync(new URL(`../${path}`, import.meta.url), 'utf8'))
 
@@ -29,6 +29,21 @@ if (serverUrls(agentMcp.mcpServers) !== serverUrls(claudePlugin.mcpServers)) {
 for (const [name, server] of Object.entries(claudePlugin.mcpServers ?? {})) {
   if (server.type !== 'http') {
     problems.push(`.claude-plugin/plugin.json server "${name}" must use type "http"`)
+  }
+}
+
+// Codex reads its icon, brand colour and descriptions from this block. Paths in
+// it resolve against the repository root, so a moved or deleted asset would
+// otherwise only show up as a blank icon in the Codex app.
+const codexInterface = agentPlugin.extensions?.['com.openai']?.interface
+if (!codexInterface) {
+  problems.push('plugin.json is missing extensions["com.openai"].interface')
+} else {
+  for (const field of ['composerIcon', 'logo']) {
+    const asset = codexInterface[field]
+    if (typeof asset !== 'string' || !existsSync(new URL(`../${asset}`, import.meta.url))) {
+      problems.push(`plugin.json interface.${field} does not point at a file in the repository`)
+    }
   }
 }
 

@@ -18,5 +18,27 @@
     "webhooks",
     "mcp",
     "agent-skills"
-  ]
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Primitive",
+        "shortDescription": "Email infrastructure for AI agents in Codex",
+        "longDescription": "Primitive bundles its hosted MCP server with skills to send email and await the threaded reply, receive and read mail at a managed *.primitive.email address, run code on inbound mail, and set up custom domains and webhooks, with no SMTP, DNS, or mail server. The same server backs Primitive's ChatGPT app and Claude connector.",
+        "developerName": "Primitive",
+        "category": "developer-tools",
+        "capabilities": [
+          "Send email and await the threaded reply",
+          "Receive and read inbound email at a managed address",
+          "Search inbound email and pull full conversation threads"
+        ],
+        "websiteURL": "https://primitive.dev",
+        "defaultPrompt": "Send an email and wait for the reply with Primitive.",
+        "brandColor": "#0B0B0F",
+        "composerIcon": "./assets/icon.png",
+        "logo": "./assets/icon.png",
+        "screenshots": []
+      }
+    }
+  }
 }
