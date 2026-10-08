@@ -1,0 +1,20 @@
+{
+  "name": "primitive",
+  "interface": {
+    "displayName": "Primitive"
+  },
+  "plugins": [
+    {
+      "name": "primitive",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}
