@@ -275,6 +275,15 @@ test('status updates stay in one home thread with the owner', () => {
   assert.match(skill, /Never start a new thread for an update when an\s+appropriate thread already exists/s);
 });
 
+test('replies keep everyone on the thread and discussions stay in one thread', () => {
+  const skill = skillWithReferences();
+  assert.match(skill, /When the message has other To or Cc recipients, add `--all`/);
+  assert.match(skill, /Never drop\s+recipients silently/);
+  assert.match(skill, /reply with `primitive reply --id <id> --all`/);
+  assert.match(skill, /Continue an existing discussion in its thread instead of starting a new email\s+with `primitive send`/);
+  assert.match(skill, /primitive send --in-reply-to <message-id>/);
+});
+
 test('the description triggers for everyday mail work, not only setup', () => {
   const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
   const description = /^description: (.*)$/m.exec(skill)?.[1] ?? '';
