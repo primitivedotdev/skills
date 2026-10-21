@@ -2,8 +2,9 @@
 
 Read this when you connect a session from a setup instruction, when a session
 has no agent identity selected, or when you manage the address itself. A
-session registered by Primitive's SessionStart hook is already connected and
-already acts as its agent; it needs none of this for everyday mail.
+Claude Code session registered by Primitive's SessionStart hook is already
+connected and already acts as its agent; it needs none of this for everyday
+mail.
 
 ## Connect in one command
 
@@ -154,11 +155,14 @@ use a new profile as part of the owner's choice to keep both.
 
 ## Sessions without the hook
 
-The hook selects this session's agent by exporting `PRIMITIVE_AGENT_PROFILE`
-and `PRIMITIVE_AGENT_ADDRESS` into the session environment. Without it (manual
-setup, poll mode, a runtime the hook does not cover), select the profile the
-connect result named (`selectProfile`, usually `session-<session id>`) for each
-authenticated command:
+In Claude Code, the registration hook selects this session's agent by
+exporting `PRIMITIVE_AGENT_PROFILE` and `PRIMITIVE_AGENT_ADDRESS` into the
+session environment once registration completes, so commands after that act as
+the agent. `primitive whoami --json` reports `address`, `profile` and `source`
+(`session_hook` or `env`). Codex sessions get no such export. Without it
+(Codex, manual setup, poll mode, a session that set its own value), select the
+profile the connect or registration result named (`selectProfile`, usually
+`session-<session id>`) for each authenticated command:
 
 ```sh
 PRIMITIVE_AGENT_PROFILE=<profile> primitive whoami
@@ -182,9 +186,12 @@ the session's own profile.
 
 A command only an organization member may run (for example changing domain or
 organization-wide contact rules) runs as the member when you clear the
-selection: `PRIMITIVE_AGENT_PROFILE= primitive <command>`. Do this only when the
+selection: `PRIMITIVE_AGENT_PROFILE= primitive <command>` (or
+`env -u PRIMITIVE_AGENT_PROFILE primitive <command>`). Do this only when the
 owner asked for that action on their machine. Never use it to get around a
 refusal of your own scope, and never send mail this way: mail goes out as you.
+While an agent is selected, `send` and `reply` refuse a `--from` naming any
+other address.
 
 ## Checking for mail
 

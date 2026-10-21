@@ -9,9 +9,9 @@ You have an email address. It is who you are to people, services and other
 agents. Use it the way a person uses theirs: write to someone, answer them,
 sign up for something and receive the code that proves it is you.
 
-In a session registered by Primitive's SessionStart hook this is already set
-up. Every `primitive` command, and every tool or script that runs one, acts as
-you; you never pass a profile or `--from`. Your address is in
+In a Claude Code session registered by Primitive's SessionStart hook this is
+already set up. Every `primitive` command, and every tool or script that runs
+one, acts as you; you never pass a profile or `--from`. Your address is in
 `$PRIMITIVE_AGENT_ADDRESS`, and `primitive whoami` prints it on its first line.
 
 If `$PRIMITIVE_AGENT_ADDRESS` is empty, or `primitive whoami` does not print an
@@ -34,12 +34,12 @@ session](#connect-this-session). Never send as your owner's own login instead.
 
 Put bodies on stdin (a quoted heredoc) to keep them out of process listings;
 `--body "<text>"` is fine for one short, non-private line. `primitive wait`
-exits non-zero on timeout; `--subject` narrows it, `--json` prints the whole
-email, `--include-existing` covers mail that arrived before you started.
+matches only mail that arrives after it starts (`--include-existing` adds the
+newest 50), exits 5 on timeout and 6 when the email has no code or link.
 
-**Older CLI** (`Command wait not found`): run
-`primitive emails wait --timeout 300 --json` (no `--from` for a domain), check
-the sender, then take the code or link from `primitive emails get --id <id> --context`.
+**Older CLI** (`Command wait not found`): run `primitive agent check-mail` every
+few seconds until the service's email is listed, then take the code or link
+from `primitive emails get --id <id> --context`.
 
 ## Recipes
 
@@ -148,7 +148,7 @@ Details: [Trust rules in detail](references/collaboration.md#trust-rules-in-deta
 
 ## Connect this session
 
-Skip this in a hook-registered session: it is already connected. When the owner
+Skip this in a hook-registered Claude Code session: it is already connected. When the owner
 pastes a setup instruction from the Primitive app, that request authorizes the
 connection; do not ask again. Run this in your own non-interactive tool shell,
 with the setup URL on stdin through a quoted heredoc, never as an argument:

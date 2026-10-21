@@ -68,7 +68,8 @@ test('primitive wait is advisory: older CLIs still pass and get the emails wait 
   const old = preflight('external', 'modern');
   assert.equal(old.result.status, 0, old.result.stderr);
   assert.match(old.result.stdout, /primitive wait: not in this CLI/);
-  assert.match(old.result.stdout, /primitive emails wait --timeout 300 --json/);
+  assert.match(old.result.stdout, /primitive agent check-mail/);
+  assert.doesNotMatch(old.result.stdout, /emails wait/);
   assert.match(old.result.stdout, /primitive emails get --id <id> --context/);
   const current = preflight('external', 'with-wait');
   assert.equal(current.result.status, 0, current.result.stderr);
@@ -136,7 +137,8 @@ test('the main flow never asks the agent to prefix commands with a profile', () 
 test('recipes cover sign-up verification with an older-CLI fallback and external-service safety', () => {
   const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
   assert.match(skill, /primitive wait --from example\.com --code --timeout 5m/);
-  assert.match(skill, /primitive emails wait --timeout 300 --json/);
+  assert.match(skill, /Command wait not found/);
+  assert.doesNotMatch(skillWithReferences(), /emails wait --timeout 300 --json/, 'emails wait has no --json flag');
   assert.match(skill, /git config --local user\.email "\$PRIMITIVE_AGENT_ADDRESS"/);
   assert.match(skill, /Sign up for or log in to an external service only when the owner's task\s+calls for it/s);
   assert.match(skill, /Never put credentials, API keys, tokens, invitation or setup URLs, or\s+verification codes in mail/s);

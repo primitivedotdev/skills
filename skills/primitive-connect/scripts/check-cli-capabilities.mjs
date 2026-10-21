@@ -57,6 +57,6 @@ if (receiver !== 'native' && receiver !== 'external' && receiver !== 'poll') {
     const wait = helpText(['wait', '--help']);
     process.stdout.write(wait !== null && /--code\b/.test(wait) && /--link\b/.test(wait)
       ? 'primitive wait: available (--code, --link).\n'
-      : 'primitive wait: not in this CLI; wait with `primitive emails wait --timeout 300 --json`, then read the email with `primitive emails get --id <id> --context`.\n');
+      : 'primitive wait: not in this CLI; run `primitive agent check-mail` every few seconds until the email is listed, then read it with `primitive emails get --id <id> --context`.\n');
   }
 }
