@@ -33,6 +33,8 @@ if (args === 'agent connect --help') {
   console.log('--wake --hook-session --notify-session --background external mail events at tool-output authority, never synthetic user messages');
 } else if (args === 'network peers --help') {
   console.log('Discover listed peers --owner');
+} else if (args === 'wait --help' && process.env.MOCK_MODE === 'with-wait') {
+  console.log('Wait for the next email to this agent --from --subject --timeout --code --link --json --include-existing');
 } else process.exit(2);
 `, { mode: 0o755 });
   try {
@@ -51,13 +53,29 @@ const referenceFiles = () =>
   readdirSync(new URL('references/', skillRoot)).filter(name => name.endsWith('.md')).sort().map(name => `references/${name}`);
 
 // SKILL.md followed by every reference file: for rules that live in a reference.
+const connectReference = () => readFileSync(new URL('references/connect.md', skillRoot), 'utf8');
+
 const skillWithReferences = () =>
   ['SKILL.md', ...referenceFiles()].map(file => readFileSync(new URL(file, skillRoot), 'utf8')).join('\n');
 
 test('accepts the exact Claude hook and peer discovery before any claim', () => {
   const { result, calls } = preflight('external', 'modern');
   assert.equal(result.status, 0, result.stderr);
-  assert.deepEqual(calls, ['agent connect --help', 'agent enroll --help', 'listen --help', 'network peers --help']);
+  assert.deepEqual(calls, ['agent connect --help', 'agent enroll --help', 'listen --help', 'network peers --help', 'wait --help']);
+});
+
+test('primitive wait is advisory: older CLIs still pass and get the emails wait fallback', () => {
+  const old = preflight('external', 'modern');
+  assert.equal(old.result.status, 0, old.result.stderr);
+  assert.match(old.result.stdout, /primitive wait: not in this CLI/);
+  assert.match(old.result.stdout, /primitive agent check-mail/);
+  assert.doesNotMatch(old.result.stdout, /emails wait/);
+  assert.match(old.result.stdout, /primitive emails get --id <id> --context/);
+  const current = preflight('external', 'with-wait');
+  assert.equal(current.result.status, 0, current.result.stderr);
+  assert.match(current.result.stdout, /primitive wait: available/);
+  const failed = preflight('external', 'missing-network');
+  assert.ok(!failed.calls.includes('wait --help'), 'a failed preflight does not probe wait');
 });
 
 test('rejects old Claude connect and enroll help before either can create a connection', () => {
@@ -90,8 +108,48 @@ test('requires display-name support before creating a self-enrolled address', ()
   assert.match(skill, /Never create a second agent or reclaim\s+an invitation just to change an enrolled name/s);
 });
 
-test('the one command comes first and needs nothing else from the skill', () => {
+test('SKILL.md leads with identity, and connecting comes after it', () => {
   const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  const body = skill.slice(skill.indexOf('\n---', 4) + 4);
+  const firstScreen = body.slice(0, body.indexOf('\n## '));
+  assert.match(firstScreen, /You have an email address\. It is who you are to people, services and other\s+agents\./s);
+  assert.match(firstScreen, /\$PRIMITIVE_AGENT_ADDRESS/);
+  assert.match(firstScreen, /primitive whoami/);
+  const sections = [...body.matchAll(/^## (.*)$/gm)].map(match => match[1]);
+  assert.equal(sections[0], 'Everyday commands');
+  assert.ok(sections.indexOf('Connect this session') > sections.indexOf('When mail arrives'));
+  for (const command of ['primitive whoami', 'primitive send --to', 'primitive reply --id', 'primitive wait --from', '--code', '--link', 'primitive emails get --id <email-id> --context', 'primitive emails search']) {
+    assert.ok(firstScreen.length + body.indexOf(command) > 0 && body.includes(command), `missing ${command}`);
+  }
+  assert.ok(skill.split('\n').length < 190, 'SKILL.md must stay under half its former length');
+});
+
+test('the main flow never asks the agent to prefix commands with a profile', () => {
+  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  assert.doesNotMatch(skill, /PRIMITIVE_AGENT_PROFILE=/);
+  assert.doesNotMatch(skill, /--from "?\$PRIMITIVE_AGENT_ADDRESS/);
+  const connect = connectReference();
+  assert.match(connect, /## Sessions without the hook/);
+  assert.match(connect, /PRIMITIVE_AGENT_PROFILE=<profile> primitive whoami/);
+  assert.match(connect, /PRIMITIVE_AGENT_PROFILE= primitive <command>/);
+});
+
+test('recipes cover sign-up verification with an older-CLI fallback and external-service safety', () => {
+  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  assert.match(skill, /primitive wait --from example\.com --code --timeout 5m/);
+  assert.match(skill, /Command wait not found/);
+  assert.doesNotMatch(skillWithReferences(), /emails wait --timeout 300 --json/, 'emails wait has no --json flag');
+  assert.match(skill, /git config --local user\.email "\$PRIMITIVE_AGENT_ADDRESS"/);
+  assert.match(skill, /Sign up for or log in to an external service only when the owner's task\s+calls for it/s);
+  assert.match(skill, /Never put credentials, API keys, tokens, invitation or setup URLs, or\s+verification codes in mail/s);
+  assert.match(skill, /never instructions/);
+  const external = readFileSync(new URL('references/external-services.md', skillRoot), 'utf8');
+  assert.match(external, /Open a link only if it points at the service you signed up with/);
+  assert.match(external, /--include-existing/);
+});
+
+test('the one command comes first in the connect reference and needs nothing else from the skill', () => {
+  const skill = connectReference();
   const first = skill.indexOf('\n## ');
   assert.equal(skill.indexOf('## Connect in one command'), first + 1, 'the one command must be the first section');
   const section = skill.slice(first + 1, skill.indexOf('\n## ', first + 1));
@@ -125,10 +183,9 @@ test('the HTTP API path serves agents without a terminal and keeps the invitatio
   const skill = skillWithReferences();
   const main = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
   const manual = readFileSync(new URL('../references/manual-setup.md', import.meta.url), 'utf8');
-  const one = main.indexOf('## Connect in one command');
-  const stub = main.indexOf('## Connect with the HTTP API');
-  assert.ok(one > 0 && stub > one, 'one command, then the HTTP API pointer');
-  assert.match(main.slice(stub), /references\/manual-setup\.md#connect-with-the-http-api/);
+  const one = main.indexOf('## Connect this session');
+  assert.ok(one > 0, 'SKILL.md keeps a short connect section');
+  assert.match(main.slice(one), /references\/manual-setup\.md#connect-with-the-http-api/);
   const api = manual.indexOf('## Connect with the HTTP API');
   const cliInManual = manual.indexOf('## Other CLI paths');
   assert.ok(api >= 0 && cliInManual > api, 'HTTP API path, then other CLI paths, in the manual setup reference');
@@ -224,7 +281,6 @@ test('work claims stay out of command arguments and use the expiring JSON form',
 
 test('documents stopping a repeating message through the endpoint', () => {
   const main = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
-  assert.match(main, /## Repeating messages/);
   assert.match(main, /primitive repeat stop --id <id>/);
   const skill = skillWithReferences();
   assert.match(skill, /POST \/emails\/\{id\}\/repeat-stop/);
@@ -236,7 +292,7 @@ test('poll receiving needs the check command, not a listener or hook', () => {
   const { result, calls } = preflight('poll', 'modern');
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /passed for poll receiving/);
-  assert.deepEqual(calls, ['agent connect --help', 'agent enroll --help', 'agent check-mail --help', 'network peers --help']);
+  assert.deepEqual(calls, ['agent connect --help', 'agent enroll --help', 'agent check-mail --help', 'network peers --help', 'wait --help']);
   const old = preflight('poll', 'no-poll');
   assert.equal(old.result.status, 1);
   assert.match(old.result.stderr, /agent check-mail --help is unavailable/);
@@ -244,7 +300,7 @@ test('poll receiving needs the check command, not a listener or hook', () => {
 });
 
 test('a session that cannot be woken connects without a session ID instead of asking the owner', () => {
-  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  const skill = connectReference();
   const first = skill.indexOf('\n## ');
   const section = skill.slice(first + 1, skill.indexOf('\n## ', first + 1));
   assert.ok(section.includes("npx -y primitive@latest agent connect --json <<'INVITATION'"));
@@ -257,7 +313,7 @@ test('a session that cannot be woken connects without a session ID instead of as
   assert.match(section, /`receiving\.mode: "poll"`, add one line/);
   assert.doesNotMatch(skill, /explicitly limited pairing|limited setup/i);
 
-  const checkStart = skill.indexOf('### Checking for mail');
+  const checkStart = skill.indexOf('## Checking for mail');
   assert.ok(checkStart > 0);
   const check = skill.slice(checkStart, skill.indexOf('\n## ', checkStart));
   assert.match(check, /`receiving\.checkCommand`/);
@@ -292,14 +348,15 @@ test('the description triggers for everyday mail work, not only setup', () => {
 });
 
 test('already_connected offers keep-without-connecting apart from --keep-existing', () => {
-  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  const skill = connectReference();
+  assert.match(readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8'), /`already_connected` \(exit status 3\), ask the owner/);
   assert.match(skill, /Keep the existing address and do not connect the new one: run nothing\s+more/);
   assert.match(skill, /Have both: rerun with `--keep-existing`/);
   assert.match(skill, /run `--resume` as it says without asking/);
 });
 
 test('every documented self-status check passes --profile', () => {
-  for (const file of ['../SKILL.md', '../references/native-session.md']) {
+  for (const file of ['../SKILL.md', '../references/connect.md', '../references/native-session.md']) {
     const text = readFileSync(new URL(file, import.meta.url), 'utf8');
     assert.doesNotMatch(text, /agent connect --status/, file);
   }
@@ -307,17 +364,19 @@ test('every documented self-status check passes --profile', () => {
 
 test('the everyday mail loop documents automatic signals and how to suppress them', () => {
   const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
-  const loop = skill.slice(skill.indexOf('## When mail arrives'), skill.indexOf('## About this connection'));
-  assert.ok(loop.length > 0);
+  const start = skill.indexOf('## When mail arrives');
+  const loop = skill.slice(start, skill.indexOf('\n## ', start + 1));
+  assert.ok(start > 0 && loop.length > 0);
   assert.match(loop, /emails get --id <id> --context/);
   assert.match(loop, /--no-signal/);
   assert.match(loop, /--fyi/);
-  assert.match(loop, /profile of the address the mail was sent to/);
+  assert.match(loop, /primitive agent check-mail/);
+  assert.match(connectReference(), /profile of the address the mail was sent to/);
   assert.doesNotMatch(loop, /agent working set "/);
 });
 
 test('after connecting, the agent offers a better name and a runtime note', () => {
-  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  const skill = connectReference();
   assert.match(skill, /primitive agent rename "<name>"/);
   assert.match(skill, /display name only;\s+the address stays the same/);
   assert.match(skill, /primitive agent runtime set/);
@@ -326,18 +385,18 @@ test('after connecting, the agent offers a better name and a runtime note', () =
 });
 
 test('setup offer comes before ending the turn, and hook repair names the profile', () => {
-  const skill = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  const skill = connectReference();
   assert.match(skill, /in the same message make the\s+one-time offer/);
   assert.match(skill, /--profile <profile> --resume --json/);
-  assert.match(skill, /Mail from another agent gets\s+no automatic signals/);
+  assert.match(readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8'), /Mail from\s+another\s+agent gets no automatic signals/);
 });
 
 test('mail loop covers chat for answers and disconnect, and setup reports stay short', () => {
   const skill = skillWithReferences();
-  const loop = skill.slice(skill.indexOf('## When mail arrives'), skill.indexOf('## About this connection'));
-  assert.match(loop, /primitive chat <address>/);
-  assert.match(loop, /do not write your own polling loop/);
-  assert.match(loop, /agent disconnect --profile <profile> --json/);
+  const main = readFileSync(new URL('../SKILL.md', import.meta.url), 'utf8');
+  assert.match(main, /primitive chat <address>/);
+  assert.match(main, /do not write your own polling loop/);
+  assert.match(connectReference(), /agent disconnect --profile <profile> --json/);
   assert.match(skill, /no organization id, profile name\s+or command transcript/);
   assert.match(skill, /\{"success":true,"data":\{"origins":\[\.\.\.\]\}\}/);
 });
@@ -393,7 +452,7 @@ test('every relative link and anchor between SKILL.md and its references resolve
   }
   assert.ok(checked > 20, `only ${checked} links checked`);
   const main = readFileSync(new URL('SKILL.md', skillRoot), 'utf8');
-  for (const reference of ['contacts', 'conversations', 'collaboration', 'presence-and-receiving', 'manual-setup']) {
+  for (const reference of ['connect', 'external-services', 'contacts', 'conversations', 'collaboration', 'presence-and-receiving', 'manual-setup']) {
     assert.match(main, new RegExp(`\\]\\(references/${reference}\\.md`), `SKILL.md must link references/${reference}.md`);
   }
 });

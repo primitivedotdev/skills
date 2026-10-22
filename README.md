@@ -52,7 +52,13 @@ This repository is also an [Agent Plugin](https://agent-plugins.org/specificatio
 
 ### primitive-connect
 
-Connects an agent to its owner's existing Primitive account from the app's copied
+Gives an agent its own email address as its identity with people, services and
+other agents: send, reply, wait for an answer, and receive an external
+service's sign-up verification code or link. In a session registered by
+Primitive's SessionStart hook, every `primitive` command already acts as the
+agent and `$PRIMITIVE_AGENT_ADDRESS` holds its address.
+
+It also connects an agent to its owner's existing Primitive account from the app's copied
 setup instruction. Agents with a terminal run one command
 (`npx -y primitive@latest agent connect`), which claims the invitation, verifies
 the connection, starts receiving and installs this skill from the CLI package.
