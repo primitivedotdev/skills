@@ -7,40 +7,48 @@ import test from 'node:test';
 
 const script = new URL('./check-cli-capabilities.mjs', import.meta.url).pathname;
 
-function preflight(receiver, mode) {
+// MOCK_CLI=short-help is a CLI whose --help is short and whose --help-full
+// prints the full text; MOCK_CLI=full-help is an older CLI that rejects
+// --help-full and prints the full text on --help.
+function preflight(receiver, mode, cli = 'short-help') {
   const directory = mkdtempSync(join(tmpdir(), 'primitive-cli-preflight-'));
   const calls = join(directory, 'calls');
   writeFileSync(join(directory, 'primitive'), `#!/usr/bin/env node
 const fs = require('node:fs');
-const args = process.argv.slice(2).join(' ');
-fs.appendFileSync(process.env.MOCK_CALLS, args + '\\n');
-if (args === 'network peers --help' && process.env.MOCK_MODE === 'missing-network') process.exit(2);
-if (args === 'agent connect --help') {
-  console.log('--session --receiver ' + (process.env.MOCK_MODE === 'old-connect-hook'
+const argv = process.argv.slice(2);
+fs.appendFileSync(process.env.MOCK_CALLS, argv.join(' ') + '\\n');
+const flag = argv.at(-1);
+const command = argv.slice(0, -1).join(' ');
+const mode = process.env.MOCK_MODE;
+const full = {
+  'agent connect': '--session --receiver ' + (mode === 'old-connect-hook'
     ? 'external leaves runtime-specific receiving to an external hook'
     : "external installs the exact Claude session's fail-open Stop hook after the verification reply")
-    + (process.env.MOCK_MODE === 'old-connect-resume' ? '' : ' and resume SessionStart hook')
-    + (process.env.MOCK_MODE === 'no-poll' ? '' : '; poll installs nothing'));
-} else if (args === 'agent check-mail --help' && process.env.MOCK_MODE !== 'no-poll') {
-  console.log('Print the mail that reached the selected connected agent profile since its previous check');
-} else if (args === 'agent enroll --help') {
-  console.log('--session --receiver ' + (process.env.MOCK_MODE === 'missing-enroll-name' ? '' : '--name ') + (process.env.MOCK_MODE === 'old-enroll-hook'
+    + (mode === 'old-connect-resume' ? '' : ' and resume SessionStart hook')
+    + (mode === 'no-poll' ? '' : '; poll installs nothing'),
+  'agent check-mail': mode === 'no-poll' ? undefined
+    : 'Print the mail that reached the selected connected agent profile since its previous check',
+  'agent enroll': '--session --receiver ' + (mode === 'missing-enroll-name' ? '' : '--name ') + (mode === 'old-enroll-hook'
     ? 'external runtime event hook'
     : "With --receiver external in the exact Claude session, install a fail-open Stop hook in that runtime's settings")
-    + (process.env.MOCK_MODE === 'old-enroll-resume' ? '' : ' and resume SessionStart hook')
-    + (process.env.MOCK_MODE === 'no-poll' ? '' : ', or poll'));
-} else if (args === 'listen --help') {
-  console.log('--wake --hook-session --notify-session --background external mail events at tool-output authority, never synthetic user messages');
-} else if (args === 'network peers --help') {
-  console.log('Discover listed peers --owner');
-} else if (args === 'wait --help' && process.env.MOCK_MODE === 'with-wait') {
-  console.log('Wait for the next email to this agent --from --subject --timeout --code --link --json --include-existing');
-} else process.exit(2);
+    + (mode === 'old-enroll-resume' ? '' : ' and resume SessionStart hook')
+    + (mode === 'no-poll' ? '' : ', or poll'),
+  listen: '--wake --hook-session --notify-session --background external mail events at tool-output authority, never synthetic user messages',
+  'network peers': mode === 'missing-network' ? undefined : 'Discover listed peers --owner',
+  wait: mode === 'with-wait' ? 'Wait for the next email to this agent --from --subject --timeout --code --link --json --include-existing' : undefined,
+}[command];
+if (full === undefined) process.exit(2);
+if (process.env.MOCK_CLI === 'full-help') {
+  if (flag !== '--help') process.exit(2);
+  console.log(full);
+} else if (flag === '--help-full') console.log(full);
+else if (flag === '--help') console.log('Short help for ' + command + '\\nFull help: primitive ' + command + ' --help-full');
+else process.exit(2);
 `, { mode: 0o755 });
   try {
     const result = spawnSync(process.execPath, [script, '--receiver', receiver], {
       encoding: 'utf8',
-      env: { ...process.env, PATH: `${directory}:${process.env.PATH}`, MOCK_MODE: mode, MOCK_CALLS: calls },
+      env: { ...process.env, PATH: `${directory}:${process.env.PATH}`, MOCK_MODE: mode, MOCK_CLI: cli, MOCK_CALLS: calls },
     });
     return { result, calls: readFileSync(calls, 'utf8').trim().split('\n') };
   } finally {
@@ -61,7 +69,24 @@ const skillWithReferences = () =>
 test('accepts the exact Claude hook and peer discovery before any claim', () => {
   const { result, calls } = preflight('external', 'modern');
   assert.equal(result.status, 0, result.stderr);
-  assert.deepEqual(calls, ['agent connect --help', 'agent enroll --help', 'listen --help', 'network peers --help', 'wait --help']);
+  assert.deepEqual(calls, ['agent connect --help-full', 'agent enroll --help-full', 'listen --help-full', 'network peers --help-full', 'wait --help-full', 'wait --help']);
+});
+
+test('reads full help with --help-full, and with --help on a CLI that predates it', () => {
+  for (const receiver of ['external', 'native', 'poll']) {
+    const current = preflight(receiver, 'with-wait', 'short-help');
+    assert.equal(current.result.status, 0, current.result.stderr);
+    assert.match(current.result.stdout, /primitive wait: available/);
+    assert.ok(current.calls.every(call => call.endsWith(' --help-full')), current.calls.join(', '));
+    const older = preflight(receiver, 'with-wait', 'full-help');
+    assert.equal(older.result.status, 0, older.result.stderr);
+    assert.match(older.result.stdout, /primitive wait: available/);
+    const commands = older.calls.filter(call => call.endsWith(' --help')).map(call => call.slice(0, -' --help'.length));
+    assert.deepEqual(older.calls, commands.flatMap(command => [`${command} --help-full`, `${command} --help`]));
+  }
+  const older = preflight('external', 'old-connect-hook', 'full-help');
+  assert.equal(older.result.status, 1);
+  assert.match(older.result.stderr, /agent connect help lacks required setup/);
 });
 
 test('primitive wait is advisory: older CLIs still pass and get the emails wait fallback', () => {
@@ -75,7 +100,7 @@ test('primitive wait is advisory: older CLIs still pass and get the emails wait 
   assert.equal(current.result.status, 0, current.result.stderr);
   assert.match(current.result.stdout, /primitive wait: available/);
   const failed = preflight('external', 'missing-network');
-  assert.ok(!failed.calls.includes('wait --help'), 'a failed preflight does not probe wait');
+  assert.ok(!failed.calls.some(call => call.startsWith('wait ')), 'a failed preflight does not probe wait');
 });
 
 test('rejects old Claude connect and enroll help before either can create a connection', () => {
@@ -83,7 +108,7 @@ test('rejects old Claude connect and enroll help before either can create a conn
     const { result, calls } = preflight('external', mode);
     assert.equal(result.status, 1);
     assert.match(result.stderr, /Do not claim the invitation/);
-    assert.deepEqual(calls, ['agent connect --help', 'agent enroll --help', 'listen --help', 'network peers --help']);
+    assert.deepEqual(calls, ['agent connect --help-full', 'agent enroll --help-full', 'listen --help-full', 'network peers --help-full']);
   }
 });
 
@@ -91,8 +116,8 @@ test('rejects missing network peer discovery for either receiver', () => {
   for (const receiver of ['external', 'native']) {
     const { result, calls } = preflight(receiver, 'missing-network');
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /network peers --help is unavailable/);
-    assert.deepEqual(calls, ['agent connect --help', 'agent enroll --help', 'listen --help', 'network peers --help']);
+    assert.match(result.stderr, /network peers help is unavailable/);
+    assert.deepEqual(calls, ['agent connect --help-full', 'agent enroll --help-full', 'listen --help-full', 'network peers --help-full', 'network peers --help']);
   }
 });
 
@@ -100,8 +125,8 @@ test('requires display-name support before creating a self-enrolled address', ()
   for (const receiver of ['external', 'native']) {
     const { result, calls } = preflight(receiver, 'missing-enroll-name');
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /agent enroll --help lacks required setup/);
-    assert.deepEqual(calls, ['agent connect --help', 'agent enroll --help', 'listen --help', 'network peers --help']);
+    assert.match(result.stderr, /agent enroll help lacks required setup/);
+    assert.deepEqual(calls, ['agent connect --help-full', 'agent enroll --help-full', 'listen --help-full', 'network peers --help-full']);
   }
   const skill = skillWithReferences();
   assert.match(skill, /agent enroll --session "\$CLAUDE_CODE_SESSION_ID" --receiver external --name "Research" --json/);
@@ -255,6 +280,15 @@ test('CLI-only agents get the installed ordinary-email activity commands', () =>
   assert.match(skill, /rejects signal\/interaction parents to avoid\s+loops/s);
 });
 
+test('guidance that reads help descriptions as capability reads full help first', () => {
+  const skill = skillWithReferences();
+  assert.match(skill, /full signal help does not mention automatic signals/);
+  assert.match(skill, /`primitive signal --help-full`,\s+or `primitive signal --help` when the CLI rejects `--help-full`/s);
+  assert.match(skill, /full listen help describes\s+"external mail events at tool-output authority"/s);
+  assert.match(skill, /`primitive listen --help-full`, or `primitive listen --help` when\s+the CLI rejects `--help-full`/s);
+  assert.doesNotMatch(skill, /`primitive (signal|listen) --help` (does not mention|describes)/);
+});
+
 test('HTTP contact requests prepare first and keep the contact policy rules', () => {
   const contacts = readFileSync(new URL('../references/contact-requests.md', import.meta.url), 'utf8');
   assert.match(contacts, /POST \/contact-requests\/prepare/);
@@ -292,10 +326,10 @@ test('poll receiving needs the check command, not a listener or hook', () => {
   const { result, calls } = preflight('poll', 'modern');
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /passed for poll receiving/);
-  assert.deepEqual(calls, ['agent connect --help', 'agent enroll --help', 'agent check-mail --help', 'network peers --help', 'wait --help']);
+  assert.deepEqual(calls, ['agent connect --help-full', 'agent enroll --help-full', 'agent check-mail --help-full', 'network peers --help-full', 'wait --help-full', 'wait --help']);
   const old = preflight('poll', 'no-poll');
   assert.equal(old.result.status, 1);
-  assert.match(old.result.stderr, /agent check-mail --help is unavailable/);
+  assert.match(old.result.stderr, /agent check-mail help is unavailable/);
   assert.match(old.result.stderr, /Do not claim the invitation/);
 });
 
