@@ -67,7 +67,7 @@ npm install -g primitive
 
 (There is also a `brew install primitivedotdev/tap/primitive` tap. It auto-bumps on each release but can trail npm by the time a release PR takes to merge, so prefer npm when you want the newest version.)
 
-**Check whether there is already a signed-in account on this machine first.** Run `primitive account show` (or `primitive whoami`). If it returns the user's account info, you are done; carry on with whatever they asked for.
+**Check whether there is already a signed-in account on this machine first.** Run `primitive account get` (or `primitive whoami`). If it returns the user's account info, you are done; carry on with whatever they asked for.
 
 **If it returns `unauthorized` or any signed-out shape, do not ask the user how they want to authenticate, do not ask for an API key, and do not assume they have an account elsewhere.** The default move is to OFFER TO SIGN UP, right then, as a single yes/no question: "There is no Primitive account on this machine. Want me to walk you through signup? It is one email + one verification code, no form, no human review." Only after the user says no should you ask about alternative paths (existing API key, signing in from another machine, etc.).
 
@@ -79,18 +79,18 @@ Signup involves two distinct values that both get casually called "code." Mixing
 
 - **Signup code** (the `--signup-code <code>` flag): an OPTIONAL invite or bonus code from Primitive. **The vast majority of users do not have one.** Do not prompt the user for a signup code. Only include `--signup-code` if the user has already, unprompted, told you they have one. The CLI does NOT interactively prompt for this flag. An `invalid_signup_code` error from the server means a value you passed was rejected, NOT that one was missing.
 
-- **Verification code**: a REQUIRED 6-digit number Primitive emails to the user's address to confirm they own it. Every signup gets one. This is what the CLI's interactive prompt (or the `--verification-code` flag on `verify-agent-signup`) is asking for.
+- **Verification code**: a REQUIRED 6-digit number Primitive emails to the user's address to confirm they own it. Every signup gets one. This is what the CLI's interactive prompt (or the `--verification-code` flag on `verify-signup`) is asking for.
 
-If the user says "the code expired" or "send another code," the default reading is they mean the **verification code** (the 6-digit one in their inbox). The fix is `primitive agent resend-agent-signup-verification --signup-token <signup-token>` to reissue it (the same `signup-token` from the start step; see below). Do not start signup over and do not ask them for a new signup code.
+If the user says "the code expired" or "send another code," the default reading is they mean the **verification code** (the 6-digit one in their inbox). The fix is `primitive agent resend-signup --signup-token <signup-token>` to reissue it (the same `signup-token` from the start step; see below). Do not start signup over and do not ask them for a new signup code.
 
 When you write back to the user, always qualify which code you mean ("verification code" or "signup code"). Saying bare "the code" when both are in scope is how this confusion starts.
 
 ### Signup steps
 
-**When the user says yes to signup, always ask explicitly which email to verify with.** Do not default to an address from CLAUDE.md, prior memory, project conventions, or any other context. Confirm their email choice BEFORE calling `start-agent-signup`:
+**When the user says yes to signup, always ask explicitly which email to verify with.** Do not default to an address from CLAUDE.md, prior memory, project conventions, or any other context. Confirm their email choice BEFORE calling `start-signup`:
 
 ```bash
-primitive agent start-agent-signup --email <user-email> --terms-accepted
+primitive agent start-signup --email <user-email> --terms-accepted
 # Optional: add `--signup-code <code>` ONLY if the user already told you they have one.
 ```
 
@@ -100,17 +100,17 @@ Primitive emails a 6-digit **verification code** to that address. The start comm
 
 ```bash
 read -rs CODE
-primitive agent verify-agent-signup --verification-code "$CODE" --signup-token <signup-token>
+primitive agent verify-signup --verification-code "$CODE" --signup-token <signup-token>
 unset CODE
 ```
 
 `read -rs` reads silently (no echo) into `CODE`; the trailing `unset` clears it after the call. The `<signup-token>` placeholder is the value from the start step. If the user pastes the verification code into the chat anyway, use it once to verify and do not echo it back.
 
-If the user says the verification code expired or never arrived, reissue it with `primitive agent resend-agent-signup-verification --signup-token <signup-token>` (reuse the `signup-token` from the start step). Do not re-run `start-agent-signup` (that starts a fresh signup session, invalidating the in-progress one).
+If the user says the verification code expired or never arrived, reissue it with `primitive agent resend-signup --signup-token <signup-token>` (reuse the `signup-token` from the start step). Do not re-run `start-signup` (that starts a fresh signup session, invalidating the in-progress one).
 
 (The shell-variable snippet is a stopgap until the CLI ships `--verification-code-from-stdin` / `--verification-code-from-file` flags so the value can be piped in directly instead of going through a shell variable.)
 
-On success `verify-agent-signup` prints OAuth credentials; do not echo or relay that output. Confirm the result with `primitive whoami` instead. You now have a managed `<random>.primitive.email` address; `primitive account show` returns the org metadata, and the assigned inbox domain is visible via `primitive domains list` after verify.
+On success `verify-signup` prints OAuth credentials; do not echo or relay that output. Confirm the result with `primitive whoami` instead. You now have a managed `<random>.primitive.email` address; `primitive account get` returns the org metadata, and the assigned inbox domain is visible via `primitive domains list` after verify.
 
 ## How to use
 

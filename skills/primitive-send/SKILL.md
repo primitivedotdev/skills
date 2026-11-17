@@ -136,8 +136,8 @@ command cat > scheduled.json <<'JSON'
 JSON
 primitive sending send --body-file ./scheduled.json
 
-primitive sending reschedule-sent-email --id <sent-email-id> --scheduled-at 2026-10-02T09:00:00-07:00
-primitive sending cancel-sent-email --id <sent-email-id>
+primitive sending reschedule --id <sent-email-id> --scheduled-at 2026-10-02T09:00:00-07:00
+primitive sending cancel --id <sent-email-id>
 ```
 
 A scheduled row has `status: "scheduled"`. Cancel and reschedule only work while it is still scheduled; once it has started sending they return `409 not_scheduled`.

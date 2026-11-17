@@ -1,7 +1,7 @@
 ---
 name: primitive-webhooks
 description: |
-  Use whenever inbound email should reach YOUR OWN code as an HTTP webhook or a local event stream: point Primitive at a URL, verify the `Primitive-Signature` header, route addresses to handlers, and debug or replay failed deliveries. PROACTIVELY: you are building an app or API route that must react to received email; a webhook handler returns 401 or never fires; you need inbound events with no public URL. REACTIVELY: the user says "send incoming email to my endpoint", "verify the webhook signature", "route support@ to this handler", "why didn't my webhook fire?", or "replay that delivery". Provides `primitive endpoints create|test`, `primitive account webhook-secret`, `primitive routes add|test`, `primitive deliveries list|replay`, `primitive listen`, and the SDK's `primitive.receive()` verifier. To run the handler on Primitive's hosted runtime instead, use primitive-functions. Part of the Primitive CLI (primitivedotdev, primitive.dev; the `primitive` or `prim` command).
+  Use whenever inbound email should reach YOUR OWN code as an HTTP webhook or a local event stream: point Primitive at a URL, verify the `Primitive-Signature` header, route addresses to handlers, and debug or replay failed deliveries. PROACTIVELY: you are building an app or API route that must react to received email; a webhook handler returns 401 or never fires; you need inbound events with no public URL. REACTIVELY: the user says "send incoming email to my endpoint", "verify the webhook signature", "route support@ to this handler", "why didn't my webhook fire?", or "replay that delivery". Provides `primitive endpoints create|test`, `primitive account webhook-secret`, `primitive routes create|test`, `primitive deliveries list|replay`, `primitive listen`, and the SDK's `primitive.receive()` verifier. To run the handler on Primitive's hosted runtime instead, use primitive-functions. Part of the Primitive CLI (primitivedotdev, primitive.dev; the `primitive` or `prim` command).
 license: MIT
 metadata:
   author: Primitive
@@ -112,9 +112,9 @@ Then send a real message to an address on the domain (see **primitive-send**, or
 By default a domain's mail goes to its default destination. Recipient routes send particular addresses to particular endpoints or Functions:
 
 ```bash
-primitive routes add billing@acme.com --endpoint <endpoint-id>
-primitive routes add 'support+*@acme.com' --match wildcard --endpoint <endpoint-id>
-primitive routes add alerts@acme.com --endpoint <endpoint-id> --priority 10     # lower is checked first
+primitive routes create billing@acme.com --endpoint <endpoint-id>
+primitive routes create 'support+*@acme.com' --match wildcard --endpoint <endpoint-id>
+primitive routes create alerts@acme.com --endpoint <endpoint-id> --priority 10     # lower is checked first
 primitive routes list
 primitive routes test billing@acme.com        # dry run: resolved destination plus a trace of every rule
 ```
