@@ -1,7 +1,7 @@
 ---
 name: primitive-domains
 description: |
-  Use whenever you need to send or receive email on the user's OWN domain (example.com) instead of a managed `*.primitive.email` address: claim the domain, publish the DNS records (MX, ownership TXT, SPF, DKIM, DMARC, TLS-RPT), verify it, and debug it when mail stops flowing. PROACTIVELY: a send failed with `cannot_send_from_domain`, or `primitive sending get-outbound-status` shows `pending_ownership` or `pending_outbound_dns`; inbound mail to a custom address never arrives; the user is launching a product that should email from its own brand. REACTIVELY: the user says "use my domain", "set up email for acme.com", "what DNS records do I need?", "give me a zone file", "why isn't my domain verified?", or "is my DNS healthy?". Provides `primitive domains add`, `primitive domains zone-file` (an importable BIND zone file), `primitive domains verify`, `primitive domains check-domain-dns`, and `primitive inbox status`. Part of the Primitive CLI (primitivedotdev, primitive.dev; the `primitive` or `prim` command).
+  Use whenever you need to send or receive email on the user's OWN domain (example.com) instead of a managed `*.primitive.email` address: claim the domain, publish the DNS records (MX, ownership TXT, SPF, DKIM, DMARC, TLS-RPT), verify it, and debug it when mail stops flowing. PROACTIVELY: a send failed with `cannot_send_from_domain`, or `primitive sending get-outbound-status` shows `pending_ownership` or `pending_outbound_dns`; inbound mail to a custom address never arrives; the user is launching a product that should email from its own brand. REACTIVELY: the user says "use my domain", "set up email for acme.com", "what DNS records do I need?", "give me a zone file", "why isn't my domain verified?", or "is my DNS healthy?". Provides `primitive domains create`, `primitive domains zone-file` (an importable BIND zone file), `primitive domains verify`, `primitive domains check-dns`, and `primitive inbox status`. Part of the Primitive CLI (primitivedotdev, primitive.dev; the `primitive` or `prim` command).
 license: MIT
 metadata:
   author: Primitive
@@ -27,11 +27,11 @@ You do not need this for a managed `*.primitive.email` address: that works immed
 
 - Listing domains and their verification state.
 - Generating the DNS records or a zone file for the user to publish.
-- Running `verify` or `check-domain-dns` to see what is missing.
+- Running `verify` or `check-dns` to see what is missing.
 
 **Ask the user first:**
 
-- Claiming a domain (`domains add`): confirm the exact domain, and whether it already receives mail elsewhere.
+- Claiming a domain (`domains create`): confirm the exact domain, and whether it already receives mail elsewhere.
 - Anything that changes where the domain's mail goes. Publishing Primitive's MX records moves inbound mail for the whole domain to Primitive. If the domain already uses Google Workspace, Microsoft 365, or another mailbox provider, say so plainly and get an explicit yes. Consider a subdomain (`mail.acme.com`, `agents.acme.com`) instead.
 - Deleting a domain or setting `--no-is-active`.
 
@@ -54,7 +54,7 @@ If signed out, follow the signup steps in the **primitive-inbox** skill.
 ## 1. Claim the domain
 
 ```bash
-primitive domains add --domain acme.com
+primitive domains create --domain acme.com
 ```
 
 The response has the domain `id` and `dns_records`: the exact records to publish. Nothing is live until they are published and verified.
@@ -62,7 +62,7 @@ The response has the domain `id` and `dns_records`: the exact records to publish
 If the response is an `mx_conflict`, the domain already has MX records pointing at another provider. Stop and tell the user. Only after they explicitly confirm replacing that provider, run:
 
 ```bash
-primitive domains add --domain acme.com --confirmed
+primitive domains create --domain acme.com --confirmed
 ```
 
 ## 2. Publish the DNS records
@@ -100,7 +100,7 @@ Send yourself a test from the new domain (see **primitive-send**) and, for inbou
 ## Troubleshooting a domain that was working
 
 ```bash
-primitive domains check-domain-dns --id <domain-id>
+primitive domains check-dns --id <domain-id>
 ```
 
 Re-checks every record now and reports per scope (`ownership`, `inbound`, `outbound`) with each record's status. Unlike `verify`, it never promotes a domain; it just tells you what drifted (someone edited DNS, a provider migration dropped a TXT record). It is rate limited; on 429 wait for `Retry-After`. It does not apply to managed `*.primitive.email` domains.
@@ -114,5 +114,5 @@ Common causes:
 ## Why this exists
 
 - One command produces every record, and the zone file turns a dozen copy-pastes into one import.
-- `verify` and `check-domain-dns` say exactly which record is wrong instead of leaving you to guess from bounces.
+- `verify` and `check-dns` say exactly which record is wrong instead of leaving you to guess from bounces.
 - The same verified domain serves inbound routing and authenticated outbound mail.

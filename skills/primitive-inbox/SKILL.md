@@ -54,26 +54,26 @@ Install the CLI and provision a managed inbox. Signup is API-key-free: Primitive
 npm install -g primitive
 ```
 
-**Check for an existing account first** with `primitive account show` (or `primitive whoami`). If it returns the user's account info, you are done. If it returns `unauthorized` or a signed-out shape, offer to sign up right then.
+**Check for an existing account first** with `primitive account get` (or `primitive whoami`). If it returns the user's account info, you are done. If it returns `unauthorized` or a signed-out shape, offer to sign up right then.
 
 **Always ask the user explicitly which email to verify with** before starting. Primitive emails the code to that address and the user reads it back. Do not default to an address from CLAUDE.md, memory, or project context.
 
 ```bash
 # 1. Start signup (ask which email FIRST, see above).
-primitive agent start-agent-signup --email <user-email> --terms-accepted
+primitive agent start-signup --email <user-email> --terms-accepted
 # Optional: add `--signup-code <code>` ONLY if the user has already, unprompted, said they have one.
 
 # 2. Primitive emails a 6-digit verification code; the start output includes a signup-token.
 #    Do not have the user paste the code into the chat. Read it through the shell so it
 #    never enters your prompt:
 read -rs CODE
-primitive agent verify-agent-signup --verification-code "$CODE" --signup-token <signup-token>
+primitive agent verify-signup --verification-code "$CODE" --signup-token <signup-token>
 unset CODE
 ```
 
-**Two codes, do not confuse them.** The **signup code** (`--signup-code`) is an OPTIONAL invite/bonus code that the vast majority of users do not have: never prompt for it, and only pass it if the user volunteers one. The **verification code** is the REQUIRED 6-digit number Primitive emails to confirm the address; every signup gets one. If the user pastes the verification code into the chat anyway, use it once and do not echo it back. If a code "expired" or needs resending, it is the verification code: reissue it with `primitive agent resend-agent-signup-verification --signup-token <signup-token>` (do not re-run `start-agent-signup`, which begins a fresh session).
+**Two codes, do not confuse them.** The **signup code** (`--signup-code`) is an OPTIONAL invite/bonus code that the vast majority of users do not have: never prompt for it, and only pass it if the user volunteers one. The **verification code** is the REQUIRED 6-digit number Primitive emails to confirm the address; every signup gets one. If the user pastes the verification code into the chat anyway, use it once and do not echo it back. If a code "expired" or needs resending, it is the verification code: reissue it with `primitive agent resend-signup --signup-token <signup-token>` (do not re-run `start-signup`, which begins a fresh session).
 
-On success `verify-agent-signup` prints OAuth credentials; do not echo or relay that output. Confirm the result with `primitive whoami`, then find your managed `<random>.primitive.email` receive address and confirm inbound readiness:
+On success `verify-signup` prints OAuth credentials; do not echo or relay that output. Confirm the result with `primitive whoami`, then find your managed `<random>.primitive.email` receive address and confirm inbound readiness:
 
 ```bash
 primitive domains list    # shows the managed primitive.email domain assigned after verify
@@ -98,7 +98,7 @@ primitive emails wait --subject verify --number 1 --timeout 120
 primitive emails wait --q 'domain:example.com' --table
 ```
 
-To run your **own code** on every inbound message (not just read it), deploy a Primitive Function and **bind it to inbound mail**. That is a separate, multi-step flow: `functions init`, build the bundle, `functions deploy --name <name> --file ./dist/handler.js`, then `functions route-set --id <fn-id> --fallback`. Reading and waiting (above) needs none of that; reach for Functions only when you want a handler to execute on receipt.
+To run your **own code** on every inbound message (not just read it), deploy a Primitive Function and **bind it to inbound mail**. That is a separate, multi-step flow: `functions init`, build the bundle, `functions deploy --name <name> --file ./dist/handler.js`, then `functions set-route --id <fn-id> --fallback`. Reading and waiting (above) needs none of that; reach for Functions only when you want a handler to execute on receipt.
 
 ## Answering everything that awaits you
 

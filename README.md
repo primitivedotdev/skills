@@ -91,15 +91,15 @@ Sends outbound email that you do not wait on: notifications, alerts, reports, re
 
 ### primitive-functions
 
-Runs your JavaScript on every inbound email with no server to host: scaffold from a template (`primitive functions init`), deploy a bundle or let Primitive build from source (`primitive functions deploy`), bind inbound mail (`primitive functions route-set`), prove it end to end (`primitive functions test --show-sends`), follow logs, and manage secrets without leaking them into shell history. Includes the loop-safety rules every auto-responder needs.
+Runs your JavaScript on every inbound email with no server to host: scaffold from a template (`primitive functions init`), deploy a bundle or let Primitive build from source (`primitive functions deploy`), bind inbound mail (`primitive functions set-route`), prove it end to end (`primitive functions test --show-sends`), follow logs, and manage secrets without leaking them into shell history. Includes the loop-safety rules every auto-responder needs.
 
 ### primitive-webhooks
 
-Delivers inbound email to your own server as signed `email.received` events. Covers creating endpoints, verifying the `Primitive-Signature` header with the SDK, routing specific addresses to specific handlers (`primitive routes add`, `primitive routes test`), receiving locally with no public URL (`primitive listen`), and debugging or replaying failed deliveries.
+Delivers inbound email to your own server as signed `email.received` events. Covers creating endpoints, verifying the `Primitive-Signature` header with the SDK, routing specific addresses to specific handlers (`primitive routes create`, `primitive routes test`), receiving locally with no public URL (`primitive listen`), and debugging or replaying failed deliveries.
 
 ### primitive-domains
 
-Puts Primitive on your own domain: claim it (`primitive domains add`), hand the user an importable DNS zone file (`primitive domains zone-file`), verify MX, SPF, DKIM, DMARC, and ownership records (`primitive domains verify`), and diagnose drift later (`primitive domains check-domain-dns`). Tells the agent to stop and ask before moving a domain's existing mail provider.
+Puts Primitive on your own domain: claim it (`primitive domains create`), hand the user an importable DNS zone file (`primitive domains zone-file`), verify MX, SPF, DKIM, DMARC, and ownership records (`primitive domains verify`), and diagnose drift later (`primitive domains check-dns`). Tells the agent to stop and ask before moving a domain's existing mail provider.
 
 The chat, inbox, send, functions, webhooks, and domains skills share the same signup: API-key-free, with one 6-digit verification code emailed to an address you choose, no form and no human review.
 

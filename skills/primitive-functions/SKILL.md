@@ -1,7 +1,7 @@
 ---
 name: primitive-functions
 description: |
-  Use whenever code should run automatically on every inbound email without hosting a server: an auto-responder, an LLM triage or support agent that answers mail, a parser for receipts or alerts, or any email-triggered workflow. PROACTIVELY: the user wants an address that "does something" when mail arrives; you are about to build a webhook server only to react to email; a handler needs a secret, a redeploy, or its logs checked. REACTIVELY: the user says "deploy a function", "auto-reply to emails", "build an email agent", or "why didn't my function reply?". Provides `primitive functions init` (templates), `primitive functions deploy` (bundle or managed build), `primitive functions route-set` to bind inbound mail, `primitive functions test --show-sends`, `primitive functions logs --follow`, and `primitive functions set-secret`. To deliver mail to your own server instead, use primitive-webhooks. Part of the Primitive CLI (primitivedotdev, primitive.dev; the `primitive` or `prim` command).
+  Use whenever code should run automatically on every inbound email without hosting a server: an auto-responder, an LLM triage or support agent that answers mail, a parser for receipts or alerts, or any email-triggered workflow. PROACTIVELY: the user wants an address that "does something" when mail arrives; you are about to build a webhook server only to react to email; a handler needs a secret, a redeploy, or its logs checked. REACTIVELY: the user says "deploy a function", "auto-reply to emails", "build an email agent", or "why didn't my function reply?". Provides `primitive functions init` (templates), `primitive functions deploy` (bundle or managed build), `primitive functions set-route` to bind inbound mail, `primitive functions test --show-sends`, `primitive functions logs --follow`, and `primitive functions set-secret`. To deliver mail to your own server instead, use primitive-webhooks. Part of the Primitive CLI (primitivedotdev, primitive.dev; the `primitive` or `prim` command).
 license: MIT
 metadata:
   author: Primitive
@@ -81,14 +81,14 @@ Save the returned function id: `export PRIMITIVE_FUNCTION_ID=<fn-id>`. Names are
 A deployed Function receives nothing until a route points at it:
 
 ```bash
-primitive functions route-set --id "$PRIMITIVE_FUNCTION_ID" --domain <domain-id>   # one domain
-primitive functions route-set --id "$PRIMITIVE_FUNCTION_ID" --fallback             # any active domain without its own binding
-primitive routes add support@acme.com --function "$PRIMITIVE_FUNCTION_ID"          # one address only
-primitive functions route-get --id "$PRIMITIVE_FUNCTION_ID"
+primitive functions set-route --id "$PRIMITIVE_FUNCTION_ID" --domain <domain-id>   # one domain
+primitive functions set-route --id "$PRIMITIVE_FUNCTION_ID" --fallback             # any active domain without its own binding
+primitive routes create support@acme.com --function "$PRIMITIVE_FUNCTION_ID"       # one address only
+primitive functions get-route --id "$PRIMITIVE_FUNCTION_ID"
 primitive functions routing-topology                                              # which domain goes to which Function
 ```
 
-If another Function already holds the target, `route-set` returns a conflict. Only add `--takeover` after the user agrees to replace it.
+If another Function already holds the target, `set-route` returns a conflict. Only add `--takeover` after the user agrees to replace it.
 
 ## 4. Prove it works
 
